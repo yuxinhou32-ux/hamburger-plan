@@ -1,0 +1,17 @@
+{
+  "name": "汉堡包计划",
+  "short_name": "汉堡包",
+  "description": "把新习惯挂在每天雷打不动的那件事后面。只做记录，不做考核。",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF7EF",
+  "theme_color": "#FFF7EF",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

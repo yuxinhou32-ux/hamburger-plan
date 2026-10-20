@@ -1,0 +1,11 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 打包/发布时生成的内部标记文件
+*.genie
+
+# 截图与临时目录
+shots/
+node_modules/

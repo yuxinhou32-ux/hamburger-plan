@@ -1,0 +1,2944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFF7EF">
+<meta name="description" content="把新习惯挂在每天雷打不动的那件事后面。只做记录，不做考核。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="汉堡包计划">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>汉堡包计划</title>
+<style>
+/* ============================================================================
+   字体：三套，全部自托管（绝不挂 Google Fonts / CDN —— 连不上会静默掉字形）
+   标题 站酷快乐体 / 正文 资源圆体 / 数字与时间 Baloo 2
+   ==========================================================================*/
+@font-face{font-family:"Resource Han Rounded";src:url("fonts/ResourceHanRoundedCN-subset.woff2") format("woff2");font-weight:200 900;font-style:normal;font-display:swap}
+@font-face{font-family:"ZCOOL KuaiLe";src:url("fonts/ZCOOLKuaiLe-subset.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Baloo 2";src:url("fonts/Baloo2-Medium-subset.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Baloo 2";src:url("fonts/Baloo2-SemiBold-subset.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Baloo 2";src:url("fonts/Baloo2-Bold-subset.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;-webkit-user-drag:none}
+/* 只有真正要打字的地方恢复「可选、可长按」：新增页的输入框、手账的写作区。
+   其余整站不可选中 —— 否则按住事项卡片一拖动就变成"选中了卡片上的文字"，
+   iOS 还会顺手弹出「拷贝 / 查询」菜单，把拖动整个打断。 */
+input,textarea,select,[contenteditable]{
+  -webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#FFF7EF;--card:#FFFFFF;--line:#F7E9D9;--main:#FFB27A;--deep:#E8945C;
+  --light:#FFF1E4;--done:#9CCB9E;--text:#4A3F35;--sub:#A79383;--faint:#C0AC99;
+  --anchor:#A8784F;--dash:#F2DEC8;--un:#FDF3E7;
+  --ft:"ZCOOL KuaiLe","Resource Han Rounded",sans-serif;
+  --fb:"Resource Han Rounded","PingFang SC","Microsoft YaHei",sans-serif;
+  --fn:"Baloo 2","Resource Han Rounded",sans-serif;
+}
+html,body{margin:0;padding:0;height:100%;overscroll-behavior:none}
+body{background:#EFE4D6;font-family:var(--fb);color:var(--text);
+  display:flex;justify-content:center;align-items:flex-start;font-size:15px}
+
+/* ---------- 手机容器 ----------
+   真机上永远是「应用本身」：铺满整屏，没有外框、没有假状态栏。
+   只有「桌面上用鼠标看」时才套一个手机壳当预览框。
+   判断依据是「有没有鼠标」而不是窗口宽度 —— 手机横屏 / iPad / 开了
+   「请求桌面网站」时窗口都很宽，但它们都是真机，绝不能套壳。 */
+.phone{width:100%;background:var(--bg);display:flex;flex-direction:column;
+  position:relative;height:100vh;height:100dvh;overflow:hidden;
+  padding-top:env(safe-area-inset-top)}
+/* 假状态栏：真机交给系统自己画，这里只在桌面预览时补一个 */
+.sb{height:58px;flex:0 0 58px;display:none;align-items:center;justify-content:space-between;
+  padding:0 24px;font-family:var(--fn);font-weight:600;font-size:15px;color:var(--text)}
+.sb-icons{display:flex;align-items:center;gap:5px}
+@media (min-width:560px) and (hover:hover) and (pointer:fine){
+  body{padding:26px 16px}
+  .phone{max-width:432px;height:min(880px,calc(100dvh - 52px));border-radius:40px;overflow:hidden;
+    box-shadow:0 26px 60px rgba(140,105,70,.28),0 0 0 9px #2B241E}
+  .sb{display:flex}
+}
+
+.body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  padding:6px 20px 12px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none}
+.body::-webkit-scrollbar{width:0}
+.body.subpage{padding-bottom:26px}
+.body.locked{overflow:hidden}
+
+/* ---------- 今天页头 ---------- */
+.hdr{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.hdr-date{display:flex;align-items:center;justify-content:space-between;font-size:12px;
+  color:#C9AC92;font-weight:500;min-height:24px}
+.more{display:flex;align-items:center;cursor:pointer;padding:4px 0 4px 8px;border-radius:8px}
+.more:active{background:#F6EADA}
+.hdr-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.hdr-title{font-family:var(--ft);font-size:34px;line-height:1.1;display:flex;align-items:center;gap:7px}
+.spark{display:inline-flex;vertical-align:middle}
+.hdr-sub{font-size:12px;color:#A79383;margin-top:5px}
+.mascot{width:56px;height:56px;flex:0 0 56px}
+
+/* ---------- 锚点行 ---------- */
+.timeline{display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+.anchor-row{display:flex;align-items:center;gap:8px;padding:8px 0 2px;border-radius:10px}
+.anchor-row .a-name{font-size:13px;font-weight:700;color:var(--anchor)}
+.anchor-row .a-time{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--deep);margin-left:-3px}
+.anchor-row .a-dash{flex:1;border-top:2px dashed var(--dash);margin-left:6px}
+/* 锚点降级：今天没有事项安排在这儿的锚点，压成一行小字 */
+.anchor-mini{display:flex;align-items:center;gap:6px;padding:2px 0 2px 21px}
+.anchor-mini .am-name{font-size:11.5px;font-weight:500;color:var(--faint)}
+.anchor-mini .am-time{font-family:var(--fn);font-size:11px;font-weight:600;color:#D2BFA6}
+
+/* ---------- 事项卡片 ---------- */
+.task{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);
+  border:1.5px solid var(--line);border-radius:24px;box-shadow:0 3px 14px rgba(217,168,125,.16);
+  cursor:grab;touch-action:pan-y;transition:box-shadow .18s,transform .18s,border-color .18s;
+  position:relative}
+.task.done{background:#FBFDFA}
+/* 打勾 / 取消：不做淡出。重绘后让卡片**从原来的位置直接滑到新位置**（FLIP），
+   全程看得见它去哪了。位置由 JS 算出来的 inline transform 驱动。 */
+.task.flipping,.anchor-row.flipping,.anchor-mini.flipping{position:relative;z-index:5}
+/* 滑动途中抬一点阴影，看起来是"卡片被移到下面去了"，不是穿过别的卡片 */
+.task.flipping{box-shadow:0 14px 28px rgba(217,158,115,.26)}
+.ico{width:42px;height:42px;flex:0 0 42px;border-radius:21px;display:flex;align-items:center;justify-content:center}
+.ico svg{width:42px;height:42px;display:block}
+.tt{flex:1;min-width:0}
+.t1{font-size:17px;font-weight:700;line-height:1.35;word-break:break-word}
+.task.done .t1{color:var(--sub)}
+.t2{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.35;word-break:break-word}
+.chk{width:25px;height:25px;flex:0 0 25px;border-radius:50%;border:2px dashed #F0DCC8;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s;
+  position:relative}
+/* 打勾的热区比圈大：卡片右侧一小条、**整张卡片的高**都算打勾，
+   不用精准戳中那个圈。25px 的圈是视觉规格，尺寸一点都不变。
+
+   横向宽度 = 卡片宽的 18%（约五分之一再小一点），封顶 68px ——
+   宽屏幕上不封顶的话它会横着长到盖住半个标题。下限由圈决定：
+   圈 + 右内边距 = 41px，所以再窄也不能低于 ~46px，否则点圈左半边会掉进编辑页。
+
+   为什么是真实元素 .hit 而不是 .chk 的伪元素：伪元素的 top/bottom 只能写死 px，
+   卡片一旦被长标题撑高（72px → 98px），上下边缘就漏在热区外。
+   .hit 用 top:0;bottom:0 贴着卡片走，卡片多高它就多高。
+
+   点在这儿拿到的事件目标带 data-act="check"，跟圈上的 attrs 完全一样，
+   所以点击 / 长按菜单 / 拖动排除三处只需要多认一个选择器（.chk, .hit）。 */
+.task .hit{position:absolute;top:0;bottom:0;right:0;width:min(18%, 68px);z-index:1;cursor:pointer;
+  border-radius:0 24px 24px 0;-webkit-touch-callout:none}
+.chk.on{background:var(--done);border:2px solid var(--done)}
+.chk.on:after{content:"";width:11px;height:6px;border-left:2.2px solid #fff;border-bottom:2.2px solid #fff;
+  transform:rotate(-45deg) translate(1px,-2px)}
+/* 计数型：圈里换成进度弧，位置和尺寸都不动，用户不用学新东西 */
+.chk.ring{border:none;background:transparent;position:relative;padding:0;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.chk.ring svg{display:block}
+.chk.ring .cnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--main);line-height:1}
+/* 长按圈弹出来的小菜单（减一 / 今天就这样） */
+.chkmenu{position:fixed;z-index:70;background:#fff;border:1.5px solid var(--line);
+  border-radius:14px;box-shadow:0 10px 26px rgba(180,140,100,.22);padding:6px;min-width:132px;
+  animation:cmIn .16s ease}
+@keyframes cmIn{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:none}}
+.chkmenu .mi{padding:9px 12px;border-radius:10px;font-size:13.5px;font-weight:700;
+  color:var(--text);white-space:nowrap}
+.chkmenu .mi:active{background:var(--light)}
+.chkmenu .mi.off{color:#C9B49C}
+.task.dragging{position:fixed;z-index:60;margin:0;cursor:grabbing;opacity:.94;pointer-events:none;
+  border-color:var(--main);box-shadow:0 10px 22px rgba(217,158,115,.30)}
+/* 按住够了、卡片"拿起来了"：只给一点点抬起感和描边，告诉她现在能拖了 */
+.task.arming{transform:scale(1.035);border-color:var(--main);
+  box-shadow:0 8px 20px rgba(217,168,125,.26)}
+
+/* ---------- 拖动落点槽 ---------- */
+.slot{max-height:0;min-height:0;overflow:hidden;border-radius:18px;margin:0;padding:0;position:relative;
+  transition:max-height .18s ease,min-height .18s ease,margin .18s ease}
+/* 槽要画在拖动中的卡片之上，否则手指会把落点整个盖住 */
+.slot.near,.slot.un-slot{
+  max-height:58px;min-height:52px;margin:2px 0 4px;padding:0 12px;z-index:65;
+  display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;
+  font-size:12.5px;font-weight:700}
+.slot.near{background:var(--light);box-shadow:inset 0 0 0 2px var(--main);color:var(--deep)}
+/* 「未分配」的槽在拖动时常显 —— 它提示的是"拖到底就是取消安排" */
+.slot.un-slot{background:var(--light);box-shadow:inset 0 0 0 2px #F3DCBE;color:#CBA983}
+.slot.un-slot.near{box-shadow:inset 0 0 0 2px var(--main);color:var(--deep)}
+.dragfoot{display:none;align-items:center;justify-content:space-between;padding:2px 2px 0;flex:0 0 auto}
+.dragfoot.on{display:flex}
+.dragfoot span{font-size:11.5px;color:var(--faint);font-weight:500}
+.dragfoot .l{color:var(--deep);font-weight:700}
+
+/* ---------- 未分配 ---------- */
+.unassigned{background:var(--un);border:1.5px dashed var(--dash);border-radius:20px;
+  padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px;transition:.15s}
+.un-head{display:flex;align-items:center;gap:8px;padding:2px 4px;border-radius:10px}
+.un-title{font-size:13px;font-weight:700;color:#B79A7C}
+.un-assigned .task,.unassigned .task{box-shadow:0 2px 10px rgba(217,168,125,.13)}
+.slot.un-slot.near{margin:2px 0 4px}
+/* ---------- 习惯栏（计数型）----------
+   一天要做 N 次的不是"一件事"，是"一个过程"：它不会因为你喝到第 3 杯就完成，
+   所以它不进「已完成」区、也不参与拖动排序 —— 到量只是变绿，还在原位，明天归零。 */
+.habitsec{background:rgba(255,255,255,.72);border:1.5px solid var(--line);border-radius:20px;
+  padding:10px 12px 12px;display:flex;flex-direction:column;gap:9px;
+  box-shadow:0 3px 14px rgba(217,168,125,.10)}
+.habit-head{display:flex;align-items:center;gap:7px;padding:2px 4px}
+.hs-title{font-size:12.5px;font-weight:700;color:var(--deep)}
+.hs-num{font-family:var(--fn);font-size:11.5px;font-weight:600;color:#C4AF9A;
+  background:#F8EEE4;border-radius:9px;padding:1px 7px;line-height:1.5;margin-left:auto}
+.habitsec .task{box-shadow:0 2px 10px rgba(217,168,125,.13);cursor:pointer}
+/* 到量了也不挪窝：只是勾上、颜色淡一档，想再加一次再点一下就是 */
+.habitsec .task.done{background:#FBFDFA}
+
+/* 已完成：全都收在这一块，颜色淡一档，不跟"今天还要做"的抢注意力 */
+.donesec{margin-top:4px;background:rgba(255,255,255,.6);border:1.5px dashed #F0E3D6;
+  border-radius:20px;padding:10px 12px 12px;display:flex;flex-direction:column;gap:9px}
+.done-head{display:flex;align-items:center;gap:7px;padding:2px 4px}
+.done-title{font-size:12.5px;font-weight:700;color:#BCA68E}
+.done-num{font-family:var(--fn);font-size:11.5px;font-weight:600;color:#C4AF9A;
+  background:#F8EEE4;border-radius:9px;padding:1px 7px;line-height:1.5}
+.donesec .task{box-shadow:0 2px 9px rgba(217,168,125,.09)}
+
+.spacer{flex:1 1 auto;min-height:18px}
+
+/* ---------- 手账入口 / 新增入口 ---------- */
+.note-entry{display:flex;align-items:center;gap:10px;padding:14px 16px;background:#fff;
+  border:1.5px solid var(--line);border-radius:20px;cursor:pointer;flex:0 0 auto;
+  box-shadow:0 3px 14px rgba(217,168,125,.13)}
+.note-entry:active{background:#FFFAF3}
+.note-entry span{font-size:13px;font-weight:500;color:var(--sub)}
+.add-row{display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 4px;flex:0 0 auto}
+.add-row span{font-size:12.5px;font-weight:500;color:var(--deep)}
+.plus{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--main);display:flex;
+  align-items:center;justify-content:center;font-size:13px;color:var(--deep);line-height:1}
+
+/* ---------- Tab Bar ---------- */
+.tabbar{padding:10px 20px 22px;flex:0 0 auto}
+.tabbar{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+.tabpill{display:flex;background:#fff;border-radius:22px;padding:5px;box-shadow:0 6px 20px rgba(200,155,110,.18)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;
+  border-radius:25px;cursor:pointer;transition:.15s}
+.tab.on{background:var(--main)}
+.tab span{font-size:10px;font-weight:500;color:#C0AE9C}
+.tab.on span{color:#fff;font-weight:700}
+.tab .ti{width:19px;height:19px;display:flex;align-items:center;justify-content:center}
+.tab .ti svg *{stroke:#C0AC99;fill:none}
+
+/* ---------- iOS「添加到主屏幕」引导条 ----------
+   只在 iPhone 浏览器里冒出来；加到主屏幕后 display-mode 变成 standalone，
+   它自己就不出现了。贴底整条，不做成浮在中间的卡片（那样会压住别人的卡）。 */
+.ios-tip{position:fixed;left:0;right:0;bottom:0;z-index:80;
+  max-width:432px;margin:0 auto;
+  display:flex;align-items:flex-start;gap:9px;
+  padding:15px 18px calc(18px + env(safe-area-inset-bottom));
+  background:#fff;border-top:1.5px solid #FFE0C4;border-radius:22px 22px 0 0;
+  box-shadow:0 -10px 30px rgba(200,150,105,.22);
+  animation:tipIn .32s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes tipIn{
+  from{opacity:0;transform:translateY(100%)}
+  to  {opacity:1;transform:translateY(0)}}
+.ios-tip-txt{flex:1;font-size:12.5px;line-height:1.75;color:#7A6552}
+.ios-tip-txt b{color:var(--deep);font-weight:700}
+.ios-tip-x{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:#F7EFE5;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tab.on .ti svg *{stroke:#fff}
+
+/* ---------- 子页通用 ---------- */
+.sub-nav{display:flex;align-items:center;gap:10px;cursor:pointer;padding:2px 0;flex:0 0 auto;min-height:24px}
+/* 返回热区：箭头本身只有 13px 高，手指很难点准。
+   用伪元素往四周扩一圈（左边一直扩到屏幕边），不改布局、不影响别的元素。 */
+.sub-nav[data-act="back"]{position:relative;z-index:3}
+.sub-nav[data-act="back"]::after{content:"";position:absolute;left:-22px;top:-12px;
+  width:100px;bottom:-12px}
+.sub-nav[data-act="back"]:active{opacity:.55}
+/* 只有汉堡页用：日期在左、新增在右 */
+.subnav-bar{justify-content:space-between;cursor:default}
+.addbtn{width:31px;height:31px;flex:0 0 31px;border-radius:50%;background:#fff;
+  border:1.5px solid var(--line);color:var(--main);font-size:19px;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 2px 8px rgba(217,158,115,.16);transition:transform .15s,background .15s}
+.addbtn:active{transform:scale(.92);background:var(--light)}
+.sub-date{font-size:12px;font-weight:500;color:#C9AC92}
+.sub-title{font-family:var(--ft);font-size:30px;line-height:1.2;flex:0 0 auto}
+.sub-sub{font-size:12px;color:#A79383;margin-top:-6px}
+
+/* ---------- 表单 ---------- */
+.form{display:flex;flex-direction:column;gap:14px;background:#fff;border:1.5px solid var(--line);
+  border-radius:28px;padding:18px;flex:0 0 auto;box-shadow:0 3px 14px rgba(217,168,125,.13);
+  position:relative}
+.sheet-grip{width:40px;height:4px;border-radius:2px;background:#F2E4D3;margin:-6px auto 2px}
+.fld{display:flex;flex-direction:column;gap:8px}
+.flabel{font-size:12.5px;font-weight:700;color:var(--sub)}
+.finput{width:100%;border:none;border-radius:14px;padding:11px 14px;background:var(--bg);
+  font-family:var(--fb);font-size:16px;font-weight:700;color:var(--text);outline:none}
+.finput::placeholder{color:#D8C9B6;font-weight:500}
+.finput:focus{box-shadow:inset 0 0 0 1.5px var(--main)}
+.frow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ftxt{font-size:14px;font-weight:700;color:var(--text)}
+.fdesc{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.4}
+.switch{width:46px;height:28px;flex:0 0 46px;border-radius:14px;background:#F2DEC8;padding:3px;
+  display:flex;align-items:flex-start;cursor:pointer;transition:.18s}
+.switch i{width:22px;height:22px;border-radius:50%;background:#fff;display:block;transition:.18s;
+  box-shadow:0 1px 3px rgba(150,110,70,.25)}
+.switch.on{background:var(--main);align-items:flex-end}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;cursor:pointer;transition:.15s;background:#F7EEE3;color:#C0AC99}
+.dot.on{background:var(--main);color:#fff}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{padding:8px 14px;border-radius:999px;background:#F7EEE3;color:#B79A7C;font-size:12.5px;
+  font-weight:700;cursor:pointer;transition:.15s}
+.chip.on{background:var(--light);color:var(--deep);box-shadow:inset 0 0 0 1.5px var(--main)}
+/* ---------- 图标选择行 ----------
+   42px 和卡片左边的图标同尺寸 —— 选的什么样，放上去就什么样。
+   横滑就是展开，不做「展开更多」按钮，所以得让「还能滑」看得见：
+   间距 12px 是算过的 —— 393 宽的屏上正好放下 5 个、第 6 个露六成，
+   右边再叠一道渐隐兜底（更宽的屏上第 7 个只露一条边时也还有提示）。
+   滑到底渐隐收掉（.at-end），免得到头了还虚着、看着像没渲完。 */
+.picker{display:flex;gap:12px;overflow-x:auto;padding:4px 6px 4px 5px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 14px),transparent);
+          mask-image:linear-gradient(to right,#000 calc(100% - 14px),transparent)}
+.picker::-webkit-scrollbar{display:none}
+.picker.at-end{-webkit-mask-image:none;mask-image:none}
+.pick{flex:0 0 42px;width:42px;height:42px;border-radius:21px;cursor:pointer;
+  transition:box-shadow .16s ease}
+.pick svg{width:42px;height:42px;display:block;pointer-events:none}
+/* 内圈 2px 用白色 = .form 的底色，画出一道间隔；
+   用 box-shadow 而不是 border，是为了不占布局 —— 否则选中时整行会跳一下。 */
+.pick.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--main)}
+
+/* 时间：小时框 : 分钟框 —— 冒号是固定画出来的，不靠输入（手机键盘上没有冒号） */
+.time-row{display:flex;align-items:center;gap:6px}
+.time-row .to{font-size:12px;color:var(--faint);flex:0 0 auto;margin:0 2px}
+.tgroup{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:3px;min-width:0}
+.time-row .finput{width:46px;flex:0 0 46px;text-align:center;font-family:var(--fn);
+  font-weight:600;font-size:16px;padding:11px 2px;letter-spacing:.02em}
+.time-row .finput::placeholder{font-weight:500}
+.tcolon{font-family:var(--fn);font-size:17px;font-weight:700;color:#C0A992;flex:0 0 auto;
+  margin-top:-1px}
+.hint{font-size:11.5px;color:var(--faint);line-height:1.6}
+.hint.bad{color:#C9736A}
+.hint b{font-family:var(--fn);font-weight:700;color:#B0855F}
+.preview{background:var(--light);border-radius:14px;padding:12px 14px;font-size:12.5px;
+  color:#B0855F;font-weight:700;line-height:1.5;word-break:break-word}
+.btn{height:50px;border-radius:25px;background:var(--main);color:#fff;font-family:var(--fb);
+  font-size:15px;font-weight:700;border:none;cursor:pointer;flex:0 0 auto;
+  box-shadow:0 6px 16px rgba(255,178,122,.4)}
+.btn:active{background:var(--deep)}
+.btn.ghost{background:#fff;color:var(--deep);box-shadow:none;border:1.5px solid var(--line)}
+.foot-note{display:flex;align-items:center;justify-content:space-between;padding:0 4px;flex:0 0 auto}
+.foot-note span{font-size:11.5px;color:var(--faint)}
+.danger{display:flex;align-items:center;justify-content:center;padding:14px;background:#fff;
+  border:1.5px solid var(--line);border-radius:16px;cursor:pointer;flex:0 0 auto}
+.danger span{font-size:12.5px;font-weight:700;color:#C4A88F}
+
+/* ---------- 设置 / 通用列表 ---------- */
+.sec{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.seclabel{font-size:11.5px;font-weight:500;color:var(--faint);padding-left:4px}
+.panel{background:#fff;border:1.5px solid var(--line);border-radius:24px;overflow:hidden;
+  box-shadow:0 3px 14px rgba(217,168,125,.13)}
+.row{display:flex;align-items:center;gap:9px;padding:14px 16px;cursor:pointer}
+.row:active{background:#FFFAF3}
+.row .rname{font-size:14.5px;font-weight:700}
+.row .rtime{font-family:var(--fn);font-size:12.5px;font-weight:600;color:var(--deep)}
+.row .rgap{flex:1}
+.pill{padding:4px 9px;border-radius:9px;background:var(--light);font-size:10.5px;
+  font-weight:700;color:#C09A7A;white-space:nowrap}
+.divider{height:1px;background:var(--line);margin:0 16px}
+.row.addr{color:var(--main);font-weight:700;font-size:13.5px;gap:8px}
+.rowtxt{font-size:11.5px;color:var(--faint);line-height:1.55;padding:0 16px 15px}
+
+/* ---------- 手账写作页 ----------
+   这张「纸」刻意不铺满整屏：
+     · 写碎碎念就两三句，纸撑到屏幕底反而显得挤，下方留白才是气口；
+     · 更实际的是键盘 —— 弹起来以后整张纸（含 iOS 那条 ^ v ✓ 工具条）能一次看全，
+       不用一边打字一边滚，所以高度按 44vh 走，小屏上也自动收窄。 */
+.editor{background:#fff;border:1.5px solid var(--line);border-radius:26px;padding:20px;
+  flex:0 1 auto;height:min(44vh,330px);min-height:200px;display:flex;
+  box-shadow:0 3px 14px rgba(217,168,125,.13)}
+/* 字号必须 ≥16px：iOS 在聚焦小于 16px 的输入控件时会自动放大整页，
+   而且退出以后不会自己缩回去 —— 表现就是"进过一次手账，主页就变大了"。 */
+.editor textarea{width:100%;border:none;outline:none;resize:none;font-family:var(--fb);
+  font-size:16px;line-height:2;color:var(--text);background:transparent}
+.editor textarea::placeholder{color:#D8C9B6}
+
+/* ---------- 回顾 ---------- */
+.cal{background:#fff;border:1.5px solid var(--line);border-radius:26px;padding:18px 16px 16px;
+  box-shadow:0 3px 14px rgba(217,168,125,.13);flex:0 0 auto}
+.mstat{display:flex;align-items:baseline;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.mnum{font-family:var(--fn);font-weight:700;font-size:42px;color:var(--main);line-height:1}
+.mlab{font-size:12.5px;color:var(--faint);font-weight:500}
+.mchg{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#C9AC92;font-size:15px;line-height:1;user-select:none}
+.mchg:active{background:#F7EEE3}
+.mmon{font-size:12.5px;color:#B79A7C;font-weight:700}
+.dotsgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px 6px;justify-items:center}
+.pd{width:15px;height:15px;border-radius:50%;background:#F3E7DA;cursor:pointer;transition:.15s}
+.pd.lv1{background:#FFE9D2}
+.pd.lv2{background:#FFCB9C}
+.pd.lv3{background:#FFAE6E}
+.pd.picked{box-shadow:0 0 0 2.5px var(--main)}
+.pd.today{box-shadow:0 0 0 2px var(--deep)}
+.pd.today.picked{box-shadow:0 0 0 2.5px var(--main)}
+.pd.future{background:transparent;box-shadow:inset 0 0 0 1.5px #F0E2D2;cursor:default}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:16px;font-size:10.5px;color:var(--faint)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:0}
+.detail{background:#fff;border:1.5px solid var(--line);border-radius:24px;padding:16px;
+  display:flex;flex-direction:column;gap:11px;flex:0 0 auto}
+.detail-head{display:flex;align-items:center;justify-content:space-between}
+.detail-date{font-size:14px;font-weight:700}
+.detail-count{font-family:var(--fn);font-size:13.5px;font-weight:600;color:var(--main)}
+.dline{display:flex;align-items:center;gap:10px;font-size:13px}
+.dline .dc{width:19px;height:19px;flex:0 0 19px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:2px dashed #EADAC6}
+.dline .dc.on{background:var(--done);border:2px solid var(--done)}
+.dline .dc.on:after{content:"";width:8px;height:4.5px;border-left:2px solid #fff;border-bottom:2px solid #fff;
+  transform:rotate(-45deg) translate(.5px,-1.5px)}
+.dline .dn{flex:0 0 auto}
+/* 计数型：名字后面接「· 5 / 8 杯」。不写动词，数字和单位自己说话 */
+.dline .dcnt{font-family:var(--fn);font-size:11px;color:var(--faint);
+  flex:0 0 auto;margin-left:-5px;white-space:nowrap}
+.dline.off .dn{color:var(--faint)}
+.dline .dg{flex:1;border-top:1.5px dashed var(--dash);min-width:6px}
+.dline .dt{font-family:var(--fn);font-size:11.5px;color:var(--faint);white-space:nowrap}
+.noteblock{background:var(--bg);border-radius:16px;padding:13px 14px;display:flex;flex-direction:column;gap:7px}
+.notelabel{font-size:11px;color:var(--faint);font-weight:500}
+.notetext{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.noteblock .empty{font-size:12.5px;color:#D2C2AE}
+.linknote{font-size:12px;font-weight:700;color:var(--main);cursor:pointer;align-self:flex-start}
+
+/* ---------- 年度表 ---------- */
+.ytable{background:#fff;border:1.5px solid var(--line);border-radius:22px;
+  overflow-x:auto;overflow-y:hidden;flex:0 0 auto;box-shadow:0 3px 14px rgba(217,168,125,.13);
+  scrollbar-width:none}
+.ytable::-webkit-scrollbar{height:0}
+.ytable table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+.ytable th,.ytable td{padding:6px 5px;text-align:center;white-space:nowrap}
+.ytable th{font-size:10.5px;color:var(--faint);font-weight:700;padding-bottom:10px}
+.ytable td.h{position:sticky;left:0;background:#fff;text-align:left;padding-left:14px;padding-right:12px;
+  font-weight:700;font-size:12.5px;color:var(--text);z-index:1;max-width:112px;overflow:hidden;text-overflow:ellipsis}
+.ytable th.h{position:sticky;left:0;background:#fff;text-align:left;padding-left:14px;z-index:2}
+.ytable td.n,.ytable td.tot{font-family:var(--fn);font-weight:600}
+.cell{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:30px;
+  border-radius:11px;padding:0 7px;font-size:12.5px}
+.cell.c0{background:transparent;color:#D6C4B0}
+.cell.c1{background:#FFEDDD;color:#C08A5C}
+.cell.c2{background:#FFD9B0;color:#A96A32}
+.cell.c3{background:#FFAE6E;color:#fff}
+.cell.tot{background:var(--light);color:var(--deep);font-weight:700;min-width:52px}
+
+/* ---------- 汉堡（总览） ---------- */
+.bgr-row{display:flex;align-items:center;gap:9px;padding:15px 16px;cursor:pointer}
+.bgr-row:active{background:#FFFAF3}
+/* 名字太长就收成省略号 —— 右边多了个箭头，不能让它把行挤破 */
+.bgr-row .rname{font-size:16.5px;font-weight:700;line-height:1.3;
+  flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bgr-row .rtime{font-family:var(--fn);font-size:14px;font-weight:600;color:var(--deep);
+  flex:0 0 auto;white-space:nowrap}
+.bgr-row .rgap{flex:1}
+.bgr-row .pill{font-size:11.5px}
+.bgr-row.off{opacity:.42}
+
+/* ---------- 汉堡页：往左滑露出「删除」（像苹果备忘录） ----------
+   行本身不改布局，外面套一层裁切框，删除按钮垫在行下面；
+   行左移 SW_DEL_W 就把它露出来。 */
+.swipe{position:relative;overflow:hidden;background:#fff}
+.swipe .bgr-row{position:relative;z-index:1;background:#fff;touch-action:pan-y;
+  transition:transform .26s cubic-bezier(.22,.61,.36,1)}
+.swipe .bgr-row:active{background:#FFFAF3}
+.swipe.open .bgr-row{transform:translateX(-82px)}
+/* 整行透明会把红色透出来，所以「今天不生效」只淡化内容 */
+.swipe .bgr-row.off{opacity:1}
+.swipe .bgr-row.off > *{opacity:.42}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:82px;
+  display:flex;align-items:center;justify-content:center;
+  background:#E4625B;color:#fff;font-size:14.5px;font-weight:700;
+  letter-spacing:.08em;cursor:pointer}
+.swipe-del:active{background:#D25049}
+
+/* ---------- 说明书（第一次打开盖一层，看完就没了） ----------
+   为什么是 fixed：真机上就是铺满整屏；桌面预览时 .phone 有外框，
+   改用 absolute 贴住手机框，免得盖到窗口外面去。 */
+.howto{position:fixed;inset:0;z-index:95;background:var(--bg);
+  display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 6px) 0 calc(env(safe-area-inset-bottom) + 10px);
+  animation:hShow .24s ease}
+@keyframes hShow{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+@media (min-width:560px) and (hover:hover) and (pointer:fine){
+  .howto{position:absolute;border-radius:38px}
+}
+.hx{position:absolute;left:14px;top:calc(env(safe-area-inset-top) + 10px);z-index:3;
+  width:46px;height:46px;display:flex;align-items:center;justify-content:center;
+  color:#B9A48E;cursor:pointer}
+.hx:active{opacity:.5}
+.hview{flex:1;overflow:hidden;display:flex;min-height:0}
+.htrack{display:flex;width:100%;transition:transform .3s cubic-bezier(.22,.61,.36,1)}
+.hpage{flex:0 0 100%;padding:30px 24px 4px;display:flex;flex-direction:column;
+  justify-content:center;gap:20px;overflow:hidden}
+.hfoot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px 2px;min-height:52px}
+.hdots{display:flex;gap:7px;align-items:center}
+.hdots i{width:7px;height:7px;border-radius:4px;background:#EBDCC9;transition:.22s}
+.hdots i.on{width:20px;background:var(--deep)}
+.hnext{display:flex;align-items:center;justify-content:center;
+  height:46px;min-width:46px;padding:0;border-radius:23px;background:var(--main);
+  color:#fff;font-size:14.5px;font-weight:700;cursor:pointer;
+  box-shadow:0 6px 16px rgba(232,148,92,.3);transition:padding .2s}
+.hnext.wide{padding:0 22px}
+.hnext:active{transform:scale(.95)}
+.htxt{display:flex;flex-direction:column;gap:9px}
+.htitle{font-family:var(--ft);font-size:24px;line-height:1.25;color:var(--text)}
+.hdesc{font-size:14.5px;line-height:1.7;color:#6E5D4E}
+.hdesc b{color:var(--anchor);font-weight:700}
+.htip{background:#FFF3E4;border:1.5px dashed #F0D6B8;border-radius:14px;
+  padding:10px 13px;font-size:13px;line-height:1.6;color:#9A7A58}
+.htip b{color:#C07A3C;font-weight:700}
+
+/* ---------- 说明书里的「示意界面」 ----------
+   自己画一套，不用真截图：字是矢量的、离线白拿、以后改今天页也不会连累它。 */
+.mini{background:var(--bg);border:1.5px solid var(--line);border-radius:20px;
+  padding:14px 15px 15px;display:flex;flex-direction:column;gap:8px;
+  justify-content:center;min-height:172px;
+  box-shadow:0 5px 20px rgba(217,168,125,.14);flex:0 0 auto}
+.mi-date{font-size:10.5px;color:#C9AC92;font-weight:700}
+.mi-label{font-size:10px;color:#C0AC99;font-weight:700;letter-spacing:.1em;margin-top:2px}
+.mi-anchor{display:flex;align-items:center;gap:7px}
+.mi-an{font-size:13px;font-weight:700;color:var(--anchor)}
+.mi-at{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--deep)}
+.mi-dash{flex:1;border-top:1.5px dashed var(--dash)}
+.mi-task{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);
+  border-radius:12px;padding:9px 11px}
+.mi-chk{width:14px;height:14px;border-radius:50%;border:1.8px solid #E6D5C2;flex:0 0 14px}
+.mi-chk.on{background:var(--done);border-color:var(--done)}
+.mi-tt{font-size:13px;font-weight:700;color:var(--text)}
+.mi-box{position:relative;padding:9px 11px;margin:0 -7px;border-radius:14px;
+  box-shadow:0 0 0 2px var(--main);display:flex;flex-direction:column;gap:8px}
+.mi-num{position:absolute;top:-10px;left:-10px;width:20px;height:20px;border-radius:50%;
+  background:var(--main);color:#fff;font-family:var(--fn);font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 5px rgba(232,148,92,.35)}
+/* 新增页示意 */
+.mi-field{background:#fff;border:1.5px solid var(--line);border-radius:12px;
+  padding:10px 12px;font-size:13.5px;font-weight:700;color:var(--text);display:flex;
+  align-items:center;gap:2px}
+.mi-caret{display:inline-block;width:1.5px;height:15px;background:var(--main);
+  animation:miCaret 1.1s steps(1) infinite}
+@keyframes miCaret{0%,49%{opacity:1}50%,100%{opacity:0}}
+.mi-dots{display:flex;gap:5px}
+.mi-dots i{flex:1;height:26px;border-radius:9px;background:#fff;border:1.5px solid var(--line);
+  font-style:normal;font-size:10.5px;font-weight:700;color:#C0AC99;
+  display:flex;align-items:center;justify-content:center}
+.mi-dots i.on{background:var(--light);border-color:#F3D6B8;color:var(--deep)}
+.mi-row{display:flex;align-items:center;gap:8px}
+.mi-row .mi-k{font-size:12.5px;font-weight:700;color:var(--text)}
+.mi-row .mi-v{font-family:var(--fn);font-size:12px;font-weight:600;color:var(--deep)}
+.mi-sw{width:38px;height:22px;border-radius:11px;background:#EFE3D5;position:relative;
+  flex:0 0 38px}
+.mi-sw i{position:absolute;top:2.5px;left:2.5px;width:17px;height:17px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.mi-sw.on{background:var(--main)}
+.mi-sw.on i{left:18.5px}
+/* 左滑露删除 */
+.mi-srow{position:relative;border-radius:12px;overflow:hidden}
+.mi-srow .mi-del{position:absolute;top:0;right:0;bottom:0;width:58px;background:#E4625B;
+  color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;letter-spacing:.06em}
+.mi-srow .mi-task{border-radius:12px;transform:translateX(-58px)}
+/* 回顾页示意：必须跟真回顾页一个长相——两张白卡，上面按月日历、下面那天明细。
+   真页面就是这么两块（04-review.png 可对照），这里连图例的措辞都照抄。
+   注意：这不是年度表（事项×月份那套 .mi-table 在文件末尾，留给完整版单开一页讲）。 */
+.mini.plain{background:transparent;border:none;box-shadow:none;padding:0;
+  gap:10px;min-height:0;justify-content:flex-start}
+.mi-card{background:#fff;border:1.5px solid var(--line);border-radius:18px;
+  padding:12px 13px;display:flex;flex-direction:column;gap:8px}
+.mi-mstat{display:flex;align-items:baseline;gap:5px}
+.mi-mnum{font-family:var(--fn);font-size:21px;font-weight:700;color:var(--main);line-height:1}
+.mi-mlab{font-size:10px;font-weight:700;color:#C9B49C}
+.mi-mnav{margin-left:auto;display:flex;align-items:center;gap:7px;
+  font-size:10.5px;font-weight:700;color:#B79A7C;align-self:center}
+.mi-mnav .ar{color:#C9B49C}
+.mi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px 4px;justify-items:center}
+.mi-grid i{width:12px;height:12px;border-radius:50%;background:#F3E7DA}
+.mi-grid i.a{background:#FFE9D2}
+.mi-grid i.b{background:#FFCB9C}
+.mi-grid i.c{background:#FFAE6E}
+.mi-grid i.pk{box-shadow:0 0 0 2px var(--main)}
+.mi-legend{display:flex;flex-wrap:wrap;gap:3px 9px;font-size:9.5px;font-weight:600;color:#C9AC92}
+.mi-legend span{display:flex;align-items:center;gap:4px}
+.mi-legend i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#F3E7DA}
+.mi-legend i.a{background:#FFE9D2}
+.mi-legend i.b{background:#FFCB9C}
+.mi-legend i.c{background:#FFAE6E}
+.mi-dhead{display:flex;align-items:center;justify-content:space-between;
+  font-size:10.5px;font-weight:700;color:var(--text)}
+.mi-dhead .mi-cnt{font-family:var(--fn);font-size:10.5px;color:var(--main)}
+.mi-dl{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text)}
+.mi-dl .mi-dc{width:12px;height:12px;flex:0 0 12px;border-radius:50%;
+  background:var(--done);display:flex;align-items:center;justify-content:center}
+.mi-dl .mi-dc:after{content:"";width:5px;height:2.8px;
+  border-left:1.6px solid #fff;border-bottom:1.6px solid #fff;
+  transform:rotate(-45deg) translate(.3px,-.95px)}
+.mi-dl .mi-dg{flex:1;border-top:1.2px dashed var(--dash);min-width:6px}
+.mi-dl .mi-dt{font-family:var(--fn);font-size:9.5px;color:#C9AC92;white-space:nowrap}
+/* 真页面最下面那行「看这一年的」，示意里也留一行，免得对不上 */
+.mi-card.mi-more{flex-direction:row;align-items:center;gap:6px;padding:9px 12px}
+.mi-more .mi-mt{font-size:11px;font-weight:700;color:var(--text)}
+.mi-pill{margin-left:auto;background:var(--light);border-radius:9px;padding:2px 8px;
+  font-size:9.5px;font-weight:700;color:var(--deep);white-space:nowrap}
+.mi-more .ar{color:#C9B49C;font-size:14px;font-weight:700;line-height:1}
+
+/* 年度表示意（完整版单独一页讲「看这一年的」，简版暂时不用） */
+.mi-table{display:flex;flex-direction:column;gap:7px}
+.mi-tr{display:flex;align-items:center;gap:5px}
+.mi-tr .mi-h{width:64px;font-size:11px;font-weight:700;color:var(--text);flex:0 0 64px}
+.mi-tr i{flex:1;height:22px;border-radius:7px;background:#FBF3EA;font-style:normal}
+.mi-tr i.c1{background:#FFEDDD}
+.mi-tr i.c2{background:#FFD9B0}
+.mi-tr i.c3{background:#FFAE6E}
+.mi-tr.mi-head span{flex:1;text-align:center;font-size:10px;color:#C9B49C;font-weight:700}
+.mi-tr.mi-head .mi-h{flex:0 0 64px}
+/* 拖动中的卡片 / 目标槽 */
+.mi-slot{border:1.5px dashed #EBC9A5;border-radius:12px;padding:11px;background:#FFFBF5;
+  font-size:12px;color:#C9A87F;font-weight:700;text-align:center}
+.mi-task.mi-lift{box-shadow:0 12px 26px rgba(217,158,115,.4);border-color:#F0CFAC;transform:translateY(-1px)}
+
+/* 第 3 页：今天页最上面那一栏。跟真的 .habitsec 同结构（栏头 + 卡片 + 右侧进度圈），
+   只是尺寸缩一号 —— 示意图要能对着真页面认出来，不能自己发明一种长相。 */
+.mi-hb{background:rgba(255,255,255,.72);border:1.5px solid var(--line);border-radius:16px;
+  padding:9px 10px 10px;display:flex;flex-direction:column;gap:7px;
+  box-shadow:0 3px 14px rgba(217,168,125,.10)}
+.mi-hhead{display:flex;align-items:center;gap:6px;padding:0 2px}
+.mi-hname{font-size:11px;font-weight:700;color:var(--deep)}
+.mi-hnum{margin-left:auto;font-family:var(--fn);font-size:10px;font-weight:600;color:#C4AF9A;
+  background:#F8EEE4;border-radius:8px;padding:1px 6px;line-height:1.6}
+.mi-hrow{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);
+  border-radius:11px;padding:7px 9px}
+.mi-hrow.done{background:#FBFDFA}
+.mi-hico{flex:0 0 20px;width:20px;height:20px;display:flex}
+.mi-hico svg{width:20px;height:20px}
+.mi-htx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.mi-hrow .mi-tt{font-size:12px;line-height:1.25}
+.mi-hsub{font-size:9.5px;font-weight:600;color:#C0AC99}
+.mi-hring{position:relative;margin-left:auto;width:20px;height:20px;flex:0 0 20px;
+  display:flex;align-items:center;justify-content:center}
+.mi-hring svg{position:absolute;left:0;top:0}
+.mi-hring b{position:relative;font-family:var(--fn);font-size:9px;font-weight:700;color:var(--main);
+  line-height:1}
+.mi-hck{margin-left:auto;width:19px;height:19px;flex:0 0 19px;border-radius:50%;
+  background:var(--done);position:relative}
+.mi-hck:after{content:"";position:absolute;left:6px;top:4.6px;width:6px;height:3px;
+  border-left:1.8px solid #fff;border-bottom:1.8px solid #fff;transform:rotate(-45deg)}
+/* 时间框填得认不出来时描一圈红，别让它悄悄存进去 */
+.finput.bad{border:1.5px solid #E08A7C;background:#FFF6F4}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:104px;transform:translate(-50%,16px);background:#4A3F35;
+  color:#FFF7EF;font-size:13px;padding:11px 20px;border-radius:999px;opacity:0;
+  transition:.22s;pointer-events:none;z-index:99;font-weight:700;max-width:80vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.empty-tip{font-size:12.5px;color:var(--faint);padding:6px 2px}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="sb">
+    <span>9:41</span>
+    <div class="sb-icons">
+      <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#4A3F35"/><rect x="4.5" y="5" width="3" height="6" rx="1" fill="#4A3F35"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" fill="#4A3F35"/><rect x="13.5" y="0" width="3" height="11" rx="1" fill="#4A3F35"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 10.2l1.9-2.3a3 3 0 0 0-3.8 0L8 10.2z" fill="#4A3F35"/><path d="M8 5.2c1.4 0 2.7.5 3.7 1.4" stroke="#4A3F35" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M8 1.6c2.3 0 4.5.9 6.1 2.5" stroke="#4A3F35" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M8 1.6C5.7 1.6 3.5 2.5 1.9 4.1" stroke="#4A3F35" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" stroke="#4A3F35" stroke-opacity=".4" fill="none"/><rect x="2" y="2" width="15" height="8" rx="2" fill="#4A3F35"/><path d="M23 4v4a2.2 2.2 0 0 0 0-4z" fill="#4A3F35" fill-opacity=".45"/></svg>
+    </div>
+  </div>
+  <div class="body" id="app"></div>
+  <div class="tabbar" id="tabbar"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================================
+ * 汉堡包计划
+ * ----------------------------------------------------------------------------
+ * 模型（开发方案第 3 节，全项目唯一需要重新想的地方）：
+ *   锚点 = 一天里固定会发生的时刻（可带时间，可按星期不同），不参与打卡
+ *   事项 = 今天要做的事
+ *   两者是【分配】关系，不是【归属】关系
+ *   → 锚点今天不开门时，它下面的事项回到「未分配」，不是消失
+ *
+ * 三条硬约束：
+ *   ① 「未分配」是算出来的，不落盘（零写操作）
+ *   ② 安排按「星期几」分别存（0=周日 … 6=周六，跟 getDay() 对齐）
+ *   ③ 不做考核 —— 全站不出现百分比 / 完成率 / 连续天数 / 提醒 / 分母
+ * ========================================================================= */
+
+/* ---------------- 常量 ---------------- */
+const WEEK = ['日','一','二','三','四','五','六'];
+const ALL  = [0,1,2,3,4,5,6];
+const APP_VER = '1.23';                 // 设置页「关于」里显示的那个版本号
+const WD   = [1,2,3,4,5];
+const WE   = [0,6];
+const STORE_KEY = 'hb_state';
+const DIRTY_KEY = 'hb_dirty';
+
+/* 存档大概多大 / 写到哪一步算「快满了」。
+   localStorage 一般是 5 MB 一个站点；3 MB 就提示，留出备份的余地。 */
+const SAVE_WARN_AT = 3 * 1024 * 1024;
+
+/* ---------------- 工具 ---------------- */
+const pad  = n => String(n).padStart(2,'0');
+const dkey = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+const pdate= k => new Date(k + 'T12:00:00');
+const esc  = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $    = id => document.getElementById(id);
+const clone= o => JSON.parse(JSON.stringify(o));
+const uid  = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+/* 存档占用：按 UTF-8 字节算（中文一个字 3 字节），跟 localStorage 的计数口径一致 */
+function fmtBytes(n){
+  if(n < 1024) return n + ' B';
+  if(n < 1024*1024) return (n < 10240 ? (n/1024).toFixed(1) : Math.round(n/1024)) + ' KB';
+  return (n/1024/1024).toFixed(1) + ' MB';
+}
+function dataSize(str){
+  const s = str || '{}';
+  try{ return new Blob([s]).size; }catch(e){ return s.length; }
+}
+
+/* ---------------- 计数型事项（一天几次） ----------------
+   「喝水 8 杯」和「写作日记」是同一个东西，唯一差别是完成判定：
+   一次打勾 vs 累计 N 次。所以只给 habits 加一个**可选**的 target，
+   不新增实体、不新增开关。计数旁挂在 counts 上，logs 的语义一个字不动。 */
+
+/* 把「一天几次」输入框里的字认成 {times, unit}。认不出来返回 null = 普通事项。
+   ⚠️ 全角数字必须先转半角：中文输入法下打出「８ 杯」是常事，不转就会被判成
+   "没有数字"，静默退化成普通事项，而提示还在说"填个数字"——她明明填了。 */
+function parseTarget(raw){
+  let s = String(raw == null ? '' : raw).trim();
+  if(!s) return null;
+  s = s.replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+
+  const m = s.match(/^(\d{1,3})\s*(.{0,3}?)\s*$/);
+  if(!m) return null;
+  const times = Number(m[1]);
+  const unit = (m[2] || '').trim();
+
+  if(/\d/.test(unit)) return null;      // 8 杯8 → 她写乱了，判失败，别猜也别修剪
+  if(!(times >= 2)) return null;        // 0 / 1 次就是普通事项，别造出「1 / 1」
+  return { times: Math.min(times, 99), unit };
+}
+
+/* 存下来的值写回输入框（这里才给「次」兜底，不落盘） */
+const targetInput = t => !t ? '' : `${t.times}${t.unit ? ' ' + t.unit : ''}`;
+/* 事项卡副标题。⚠️ 绝对不写动词：写「已喝 3 / 8 杯」，换成「做题」就不通了 */
+const countText = (n, t) => `${Math.min(n || 0, t.times)} / ${t.times} ${t.unit || '次'}`;
+
+/* ---------------- 图标 ---------------- */
+const HAMBURGER = `<svg viewBox="0 0 56 56" width="56" height="56" xmlns="http://www.w3.org/2000/svg">
+<path d="M7 30c0-11.5 9.4-19.5 21-19.5S49 18.5 49 30z" fill="#F0B071"/>
+<circle cx="19" cy="21" r="1.7" fill="#FFF6EC"/><circle cx="28" cy="17.5" r="1.7" fill="#FFF6EC"/><circle cx="37" cy="21" r="1.7" fill="#FFF6EC"/>
+<circle cx="16.5" cy="32" r="3" fill="#FFB9A0" opacity=".9"/><circle cx="39.5" cy="32" r="3" fill="#FFB9A0" opacity=".9"/>
+<circle cx="22" cy="27" r="2.2" fill="#5B4636"/><circle cx="34" cy="27" r="2.2" fill="#5B4636"/>
+<path d="M24.2 32.4q1.8 1.9 3.8 0" stroke="#5B4636" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+<path d="M5.5 36c0-3.3 2.2-6 5.5-6h34c3.3 0 5.5 2.7 5.5 6s-2.2 5-5.5 5H11c-3.3 0-5.5-1.7-5.5-5z" fill="#A8CFA4"/>
+<path d="M7 42.5c0-2.8 2.4-5 5.6-5h30.8c3.2 0 5.6 2.2 5.6 5s-2.5 4.4-5.6 4.4H12.6C9.4 46.9 7 45.3 7 42.5z" fill="#C98457"/>
+<path d="M9.5 47.5c0-2.5 2.2-4.4 5-4.4h27c2.8 0 5 1.9 5 4.4s-2.5 4.5-5 4.5h-27c-2.8 0-5-2-5-4.5z" fill="#F0B071"/>
+</svg>`;
+
+const ICON = {
+  med: `<svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg"><circle fill="#FFEBD9" cx="21" cy="21" r="21"/><path fill="#E8945C" transform="matrix(1 0 0 1 16.5 11.5)" d="M4.5 0C7.5 3.4 9 6.4 9 9C9 11.7 7 13.5 4.5 13.5C2 13.5 0 11.7 0 9C0 6.4 1.5 3.4 4.5 0Z"/><path fill="#E8945C" transform="matrix(1 0 0 1 11.5 18.5)" d="M13.21 5.34Q15.02 2.5 19.36 1.15Q19.84 1.01 20.06 .56Q20.31 .12 20.15 -.36Q20.01 -.84 19.56 -1.06Q19.12 -1.31 18.64 -1.15Q13.47 .47 11.19 4.06Q10.91 4.47 11.03 4.96Q11.12 5.45 11.56 5.71Q11.97 5.99 12.46 5.87Q12.95 5.78 13.21 5.34ZM7.81 4.06Q5.53 .47 .36 -1.15Q-.12 -1.31 -.56 -1.06Q-1.01 -.84 -1.15 -.36Q-1.31 .12 -1.06 .56Q-.84 1.01 -.36 1.15Q3.98 2.5 5.79 5.34Q6.05 5.78 6.54 5.87Q7.03 5.99 7.44 5.71Q7.88 5.45 7.97 4.96Q8.09 4.47 7.81 4.06Z"/><path fill="#E8945C" transform="matrix(1 0 0 1 9.5 26.5)" d="M11.5 4.8Q4.82 4.8 .98 -.69Q.71 -1.11 .21 -1.18Q-.28 -1.28 -.69 -.98Q-1.11 -.71 -1.18 -.21Q-1.28 .28 -.98 .69Q3.58 7.2 11.5 7.2Q19.42 7.2 23.98 .69Q24.28 .28 24.18 -.21Q24.11 -.71 23.69 -.98Q23.28 -1.28 22.79 -1.18Q22.29 -1.11 22.02 -.69Q18.18 4.8 11.5 4.8Z"/></svg>`,
+  walk: `<svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg"><circle fill="#E7F2E5" cx="21" cy="21" r="21"/><clipPath id="cwk"><circle cx="21" cy="21" r="21"/></clipPath><g clip-path="url(#cwk)"><ellipse fill="#6BA37D" transform="matrix(.951 -.309 .309 .951 12.6 15.9)" cx="6.4" cy="8.6" rx="6.4" ry="8.6"/><ellipse fill="#9CCB9E" transform="matrix(.951 -.309 .309 .951 24.1 28.4)" cx="6.4" cy="8.6" rx="6.4" ry="8.6"/></g></svg>`,
+  book: `<svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg"><circle fill="#EFE9F9" cx="21" cy="21" r="21"/><clipPath id="cbk"><circle cx="21" cy="21" r="21"/></clipPath><g clip-path="url(#cbk)"><path fill="#9B85C4" transform="matrix(1 0 0 1 7.8 11)" d="M13.2 3.6C9.8 1 4.8 0 0 0L0 22.4C4.8 22.4 9.8 23.4 13.2 26.2C16.6 23.4 21.6 22.4 26.4 22.4L26.4 0C21.6 0 16.6 1 13.2 3.6Z"/><path fill="#FFF" transform="matrix(1 0 0 1 21 14.6)" d="M1.2 22.6L1.2 0Q1.21 -.5 .85 -.85Q.5 -1.21 0 -1.2Q-.5 -1.21 -.85 -.85Q-1.21 -.5 -1.2 0L-1.2 22.6Q-1.21 23.1 -.85 23.45Q-.5 23.81 0 23.8Q.5 23.81 .85 23.45Q1.21 23.1 1.2 22.6Z"/></g></svg>`,
+  /* ---------- 事项图标：设计交付 14 个（42×42，.icon-bg 底盘 + .icon-fg 图形）---------- */
+  default : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="默认图标"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFF1E4"/> <g class="icon-fg" fill="#CBB49B"> <path d="M9 18.5 A12 9.5 0 0 1 33 18.5 Z"/> <rect x="8.5" y="20.8" width="25" height="4.4" rx="2.2"/> <path d="M9 27.5 A12 7 0 0 0 33 27.5 Z"/> </g> </svg>`,
+  exercise: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="运动健身"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFEBD9"/> <g class="icon-fg" fill="#E8945C"> <rect x="6.6" y="12.8" width="5.4" height="16.4" rx="2.7"/> <rect x="12.6" y="15.4" width="4.2" height="11.2" rx="2.1"/> <rect x="25.2" y="15.4" width="4.2" height="11.2" rx="2.1"/> <rect x="30" y="12.8" width="5.4" height="16.4" rx="2.7"/> <rect x="16.2" y="18.4" width="9.6" height="5.2" rx="2.6"/> </g> </svg>`,
+  running : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="跑步"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFEBD9"/> <g class="icon-fg" fill="#E8945C"> <path d="M11 22.5 C11 18 14 15.2 17.6 15.2 C20.6 15.2 22.3 17.4 25 19.2 C27.4 20.6 31 21.2 32.5 22.5 Z"/> <rect x="8.6" y="22.5" width="26" height="4.6" rx="2.3"/> </g> </svg>`,
+  stretch : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="拉伸瑜伽"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#E7F2E5"/> <g class="icon-fg" fill="#6BA37D"> <circle cx="21" cy="10" r="3.9"/> <rect x="9.465" y="11.55" width="10.27" height="4.6" rx="2.3" transform="rotate(211.1 14.6 13.85)"/> <rect x="22.265" y="11.55" width="10.27" height="4.6" rx="2.3" transform="rotate(-31.1 27.4 13.85)"/> <rect x="18" y="15" width="6" height="14" rx="3"/> </g> </svg>`,
+  outdoor : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="晒太阳 户外"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFEBD9"/> <g class="icon-fg" fill="#E8945C"> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(45 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(90 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(135 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(180 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(225 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(270 21 21)"/> <rect x="19.4" y="4.6" width="3.2" height="6" rx="1.6" transform="rotate(315 21 21)"/> <circle cx="21" cy="21" r="7.2"/> </g> </svg>`,
+  water   : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="喝水"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#E7F2E5"/> <g class="icon-fg" fill="#6BA37D"> <path d="M21 5.8 C21 5.8 32.5 18.5 32.5 24 A11.5 11.5 0 0 1 9.5 24 C9.5 18.5 21 5.8 21 5.8 Z"/> </g> </svg>`,
+  sleep   : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="早睡"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#E7F2E5"/> <g class="icon-fg" fill="#6BA37D"> <path d="M21.126 6.499 A14.5 14.5 0 1 0 33.378 28.555 A13 13 0 0 1 21.126 6.499 Z"/> <circle cx="29.5" cy="13" r="2.7"/> <circle cx="32.5" cy="19" r="1.7"/> </g> </svg>`,
+  cleanup : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="收拾打扫"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#E7F2E5"/> <g class="icon-fg" fill="#6BA37D"> <rect x="19.5" y="6" width="3" height="17" rx="1.5"/> <path d="M15.3 22.5 L26.7 22.5 L28.8 33.2 C29.1 34.8 27.9 36 26.3 36 L15.7 36 C14.1 36 12.9 34.8 13.2 33.2 Z"/> </g> </svg>`,
+  journal : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="写作日记"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#EFE9F9"/> <g class="icon-fg" fill="#9B85C4"> <rect x="14.12" y="15.25" width="16.26" height="7" rx="3.5" transform="rotate(135 22.25 18.75)"/> <path d="M18.97 26.97 L12.61 28.39 L14.03 22.03 Z"/> </g> </svg>`,
+  study   : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="学语言 背单词"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#EFE9F9"/> <g class="icon-fg"> <rect x="15.5" y="9" width="18" height="24" rx="3.6" fill="#C3B4E0" transform="rotate(8 24.5 21)"/> <rect x="8.5" y="9" width="18" height="24" rx="3.6" fill="#9B85C4" transform="rotate(-6 17.5 21)"/> <rect x="12.5" y="16.2" width="10" height="2.8" rx="1.4" fill="#C3B4E0" transform="rotate(-6 17.5 21)"/> <rect x="12.5" y="22.2" width="6.5" height="2.8" rx="1.4" fill="#C3B4E0" transform="rotate(-6 17.5 21)"/> </g> </svg>`,
+  budget  : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="记账"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#EFE9F9"/> <g class="icon-fg"> <circle cx="21" cy="21" r="14" fill="#9B85C4"/> <circle cx="21" cy="21" r="10.6" fill="none" stroke="#C3B4E0" stroke-width="2.4"/> <g stroke="#C3B4E0" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"> <path d="M16 15.4 L21 21.4 L26 15.4"/> <path d="M21 21.4 L21 27"/> <path d="M16.6 22.8 L25.4 22.8"/> <path d="M16.6 26 L25.4 26"/> </g> </g> </svg>`,
+  medicine: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="吃药 补充剂"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFE9E5"/> <g class="icon-fg"> <rect x="11.1" y="14.5" width="19.8" height="13" rx="6.5" fill="#E07B72" transform="rotate(-45 21 21)"/> <path d="M16.4 16.4 L23.4 9.4 A6.5 6.5 0 0 1 32.6 18.6 L25.6 25.6 Z" fill="#F5BDB6"/> </g> </svg>`,
+  skincare: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="洗漱护肤"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFE9E5"/> <g class="icon-fg" fill="#E07B72"> <rect x="16" y="8" width="10" height="5.5" rx="2.5"/> <rect x="17.5" y="13" width="7" height="4.5" rx="1"/> <rect x="12.5" y="16.5" width="17" height="19" rx="4.5"/> <circle cx="32.5" cy="22" r="2.6"/> <circle cx="30.2" cy="15.5" r="1.7"/> </g> </svg>`,
+  contact : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42" width="42" height="42" role="img" aria-label="联系家人朋友"> <circle class="icon-bg" cx="21" cy="21" r="21" fill="#FFE9E5"/> <g class="icon-fg" fill="#E07B72"> <rect x="7.5" y="10" width="27" height="19" rx="6"/> <path d="M14 28 L13 35 L21.5 28 Z"/> <circle cx="15.5" cy="19.5" r="1.9" fill="#FFE9E5"/> <circle cx="21" cy="19.5" r="1.9" fill="#FFE9E5"/> <circle cx="26.5" cy="19.5" r="1.9" fill="#FFE9E5"/> </g> </svg>`,
+  star: `<svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg"><circle fill="#FFF1E4" cx="21" cy="21" r="21"/><path d="M21 11.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L21 26.4l-5.9 3.2 1.3-6.6-4.9-4.6 6.6-.8z" fill="#FFB27A"/></svg>`,
+  pin: `<svg width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg"><path fill="#F09A5C" transform="matrix(1 0 0 1 2.3 1.2)" d="M4.2 0C6.5 0 8.4 1.9 8.4 4.2C8.4 7.2 4.2 10.6 4.2 10.6C4.2 10.6 0 7.2 0 4.2C0 1.9 1.9 0 4.2 0Z"/><circle fill="#FFF7EF" transform="matrix(1 0 0 1 4.9 3.8)" cx="1.6" cy="1.6" r="1.6"/></svg>`,
+  back: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9.6 3.4L5 8l4.6 4.6" stroke="#E8945C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  dots: `<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="3.9" cy="9" r="1.7" fill="#BCA88F"/><circle cx="9" cy="9" r="1.7" fill="#BCA88F"/><circle cx="14.1" cy="9" r="1.7" fill="#BCA88F"/></svg>`,
+  pen : `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.9 1.9l2.2 2.2-7.5 7.5-3 .8.8-3z" stroke="#A79383" stroke-width="1.3" stroke-linejoin="round"/><path d="M8.9 2.9l2.2 2.2" stroke="#A79383" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  chev: `<svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.6 1.6l4.9 4.9-4.9 4.9" stroke="#D9C6B0" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  spark: `<svg width="13" height="13" viewBox="0 0 12 12"><path fill="#FFD37E" d="M6 0L7.6 4.4L12 6L7.6 7.6L6 12L4.4 7.6L0 6L4.4 4.4L6 0Z"/></svg>`,
+  mascot: HAMBURGER
+};
+
+/* 挑图标行的顺序：默认在最前，其余按四组色系排；med/walk/book 是原有三个，配色正好各归一组 */
+const ICON_ORDER = [
+  'default', 'exercise', 'running', 'outdoor', 'med',
+  'stretch', 'water', 'sleep', 'cleanup', 'walk',
+  'journal', 'study', 'budget', 'book', 'medicine',
+  'skincare', 'contact',
+];
+
+/* ============================================================================
+ * store —— 唯一的读写入口
+ *   所有写操作必须走 store.mutate；任何地方都不允许直接 localStorage.setItem。
+ *   守住这条，M2 接云同步时就只是接一根线。
+ * ========================================================================*/
+const store = (() => {
+  let S = null;
+  const subs = [];
+
+  function seed(){
+    return {
+      updatedAt: 0,
+      anchors: [
+        { id:'a1', title:'起床后',   order:1, deleted:false, rules:[{ days:WD.slice(),           start:'7:00',  end:null }] },
+        { id:'a4', title:'周末起床', order:2, deleted:false, rules:[{ days:WE.slice(),           start:'9:00',  end:null }] },
+        { id:'a2', title:'午饭后',   order:3, deleted:false, rules:[{ days:ALL.slice(),          start:'12:00', end:'12:30' }] },
+        { id:'a3', title:'下班进门', order:4, deleted:false, rules:[{ days:WD.slice(),           start:'18:30', end:null }] }
+      ],
+      habits: [
+        { id:'h1', title:'冥想 10 分钟', mini:'太忙就 3 次深呼吸',       icon:'med',  order:1, archived:false,
+          placement:{ 0:'a4', 1:'a1', 2:'a1', 3:'a1', 4:'a1', 5:'a1', 6:'a4' } },
+        { id:'h2', title:'散步 15 分钟', mini:'太忙就 站起来走两分钟',   icon:'walk', order:2, archived:false,
+          placement:{ 0:'a2', 1:'a2', 2:'a2', 3:'a2', 4:'a2', 5:'a2', 6:'a2' } },
+        /* 阅读每天都做，挂在「下班进门」后面 —— 那个锚点周末不开门，
+           所以周六日它自动回到「未分配」。这正是整个模型的演示。 */
+        { id:'h3', title:'阅读 15 分钟', mini:'太忙就 读 1 页',         icon:'book', order:3, archived:false,
+          placement:{ 0:'a3', 1:'a3', 2:'a3', 3:'a3', 4:'a3', 5:'a3', 6:'a3' } }
+      ],
+      extras: {},
+      logs:   {},
+      counts: {},
+      notes:  {}
+    };
+  }
+
+  /* 补齐老数据缺的字段（将来接云同步时，两端版本不一致也靠它兜底） */
+  function migrate(s){
+    s = s || {};
+    s.updatedAt = s.updatedAt || 0;
+    s.seenHowto = !!s.seenHowto;      // 说明书看过没有（存这儿，导出备份再恢复不会重复弹）
+    s.anchors = Array.isArray(s.anchors) ? s.anchors : [];
+    s.habits  = Array.isArray(s.habits)  ? s.habits  : [];
+    s.extras  = s.extras || {};
+    s.logs    = s.logs   || {};
+    s.counts  = s.counts || {};
+    s.notes   = s.notes  || {};
+    s.anchors.forEach(a => {
+      a.order = a.order || 0;
+      a.deleted = !!a.deleted;
+      if(!Array.isArray(a.rules) || !a.rules.length) a.rules = [{ days: ALL.slice(), start:null, end:null }];
+      a.rules.forEach(r => {
+        r.days = Array.isArray(r.days) ? r.days.filter(d => d>=0 && d<=6).sort((x,y)=>x-y) : ALL.slice();
+        r.start = r.start || null;
+        /* 老数据里可能已经存了 end:"0:00"（她打了 0 想删掉结束时间），顺手清掉 */
+        r.end   = noEnd(r.end) || null;
+      });
+    });
+    s.habits.forEach(h => {
+      h.order = h.order || 0;
+      h.archived = !!h.archived;
+      h.placement = h.placement || {};
+      /* target 是可选字段：没有 / 认不出来 = 一次打勾。老数据没有它，天然就是普通事项，
+         所以加这个字段**不需要迁任何历史数据**。 */
+      const t = h.target;
+      h.target = (t && Number(t.times) >= 2)
+        ? { times: Math.min(Math.round(Number(t.times)), 99), unit: String(t.unit || '').slice(0, 3) }
+        : null;
+    });
+    return s;
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw) return migrate(JSON.parse(raw));
+    }catch(e){}
+    return seed();
+  }
+
+  S = load();
+
+  let saveFail = false;
+
+  /* 写盘。失败时**绝不能装作成功**：存储满了或者隐私模式下 setItem 会抛，
+     她以为这一下记上了、其实没写进去，是最坏的一种丢数据。 */
+  function persist(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(S));
+      saveFail = false;
+    }catch(e){
+      /* 只提示本次会话的第一次，别每点一下都弹 */
+      if(!saveFail){ try{ toast('这次没存上 —— 去设置里导出备份'); }catch(_){} }
+      saveFail = true;
+    }
+  }
+
+  /* M1：脏队列只写不消费。M2 接云同步时只补消费端，页面代码一行不改。 */
+  function markDirty(){
+    try{
+      const d = JSON.parse(localStorage.getItem(DIRTY_KEY) || '[]');
+      d.push(S.updatedAt);
+      localStorage.setItem(DIRTY_KEY, JSON.stringify(d.slice(-200)));
+    }catch(e){}
+  }
+
+  function fire(){ subs.forEach(cb => { try{ cb(S); }catch(e){} }); }
+
+  return {
+    read(){ return S; },
+    saveFailed(){ return saveFail; },
+    mutate(fn){
+      fn(S);
+      S.updatedAt = Date.now();
+      persist();
+      markDirty();
+      fire();
+    },
+    subscribe(cb){ subs.push(cb); },
+    snapshot(){ return JSON.stringify(S, null, 2); },
+    /* 从备份恢复：走和 load 同一套 migrate，老备份也吃得进来 */
+    replace(raw){
+      const next = migrate(JSON.parse(raw));
+      S = next;
+      S.updatedAt = Date.now();
+      persist();
+      markDirty();
+      fire();
+    },
+    reset(){
+      S = seed(); S.updatedAt = Date.now();
+      persist(); fire();
+    }
+  };
+})();
+
+/* ============================================================================
+ * 界面状态
+ * ========================================================================*/
+const blankForm = () => ({
+  isAnchor:false, editId:null, title:'', mini:'', resident:false,
+  days:ALL.slice(), aDays:ALL.slice(), anchorId:'', start:'', end:'', type:null,
+  icon:'default', target:null
+});
+
+const ui = {
+  screen : 'today',                 // today | burger | review | add | note | settings | year | howto
+  tab    : 'today',
+  today  : new Date(),
+  reviewD: dkey(new Date()),
+  calM   : (() => { const d = new Date(); return { y:d.getFullYear(), m:d.getMonth() }; })(),
+  noteD  : null,
+  from   : 'today',
+  howtoI : 0,                       // 说明书翻到第几页
+  howtoFrom: null,                  // 从哪一屏点进说明书的
+  form   : blankForm(),
+  chkMenu: null,                    // 长按计数圈弹出的小菜单 {id, x, y}
+  drag   : null
+};
+
+/* ============================================================================
+ * 派生（全部现算，不落盘）
+ * ========================================================================*/
+const todayD  = () => ui.today;
+const wd      = () => todayD().getDay();
+const tkey    = () => dkey(todayD());
+const wdOf    = k => pdate(k).getDay();
+const fmtDate = d => `${d.getMonth()+1}月${d.getDate()}日 · 周${WEEK[d.getDay()]}`;
+
+/* 今天出现哪些锚点 */
+/* "8:00-10:00" → 480（分钟）。没填时间的给 Infinity，排序时自然沉到最后 */
+function timeToMinutes(t){
+  if(!t) return Infinity;
+  const p = normTime(String(t).split('-')[0]);
+  if(!p) return Infinity;
+  const parts = p.split(':');
+  return (+parts[0]) * 60 + (+parts[1]);
+}
+
+function anchorsOn(w){
+  const list = store.read().anchors
+    .filter(a => !a.deleted && a.rules.some(r => r.days.includes(w)));
+  /* 按当天的锚点时间排 —— 早上 8 点的一定排在最前面，没填时间的排最后 */
+  list.sort((x, y) => {
+    const tx = timeToMinutes(anchorTime(x, w));
+    const ty = timeToMinutes(anchorTime(y, w));
+    if(tx !== ty) return tx - ty;
+    return (x.order || 0) - (y.order || 0);
+  });
+  return list;
+}
+
+/* 不分星期的那份（汉堡页 / 设置页用）：按第一条规则的时间排 */
+function anchorsAll(){
+  return store.read().anchors
+    .filter(a => !a.deleted)
+    .sort((x, y) => {
+      const tx = timeToMinutes(x.rules[0] && x.rules[0].start);
+      const ty = timeToMinutes(y.rules[0] && y.rules[0].start);
+      if(tx !== ty) return tx - ty;
+      return (x.order || 0) - (y.order || 0);
+    });
+}
+function anchorTime(a, w){
+  const r = a.rules.find(r => r.days.includes(w));
+  if(!r) return '';
+  if(!r.start) return '';
+  const e = noEnd(r.end);
+  return e ? `${r.start}-${e}` : r.start;
+}
+
+/* 手机的数字键盘打不出冒号，所以时间允许直接写数字：
+     8 / 08 → 8:00      800 / 830 → 8:00 / 8:30      1830 → 18:30
+   也认 8:00、18：30（中文冒号）。认得出就统一成 H:mm，认不出返回 null，
+   交回调用方决定是提示还是丢掉。 */
+function normTime(raw){
+  let v = String(raw == null ? '' : raw).trim().replace(/[：.．、,，]/g, ':');
+  if(!v) return '';
+  let h, m;
+  if(v.indexOf(':') >= 0){
+    const p = v.split(':');
+    if(p.length > 2) return null;
+    h = p[0]; m = (p[1] === '' || p[1] == null) ? '0' : p[1];
+  }else{
+    if(!/^\d+$/.test(v)) return null;
+    if(v.length <= 2){ h = v; m = '0'; }
+    else if(v.length === 3){ h = v.slice(0,1); m = v.slice(1); }
+    else if(v.length === 4){ h = v.slice(0,2); m = v.slice(2); }
+    else return null;
+  }
+  if(!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(m)) return null;
+  const H = +h, M = +m;
+  if(H > 23 || M > 59) return null;
+  return H + ':' + String(M).padStart(2, '0');
+}
+/* 结束时间填成 0:00 一律当"没填"。
+   时间段的终点不可能是半夜零点，而她本来是想"把后面那组删掉"，打了个 0 而已 ——
+   结果被存成 12:00-0:00，看着像坏数据。 */
+function noEnd(v){ return (!v || v === '0:00') ? '' : v; }
+
+/* 把 "8:00" 拆成小时框 / 分钟框要显示的两段：["08","00"]。
+   小时补两位显示（08 而不是 8），是为了让"这是小时"一眼看得出来；
+   存库仍然是 normTime 的样子（8:00），别的屏不用跟着改。 */
+function splitTime(s){
+  const t = normTime(s);
+  if(!t) return ['', ''];
+  const p = t.split(':');
+  return [p[0].padStart(2, '0'), p[1]];
+}
+/* 一个人话标签：每天 / 工作日 / 周末；不是这三种就直接列 */
+function cycleLabel(days){
+  const d = days.slice().sort((x,y)=>x-y);
+  if(d.length===7) return '每天';
+  if(d.join()==='1,2,3,4,5') return '工作日';
+  if(d.join()==='0,6') return '周末';
+  if(!d.length) return '哪天都不';
+  return d.map(i => '周'+WEEK[i]).join('、');
+}
+
+/* 某一天的布局：锚点分组 + 未分配（未分配是算出来的，不落盘） */
+function layoutFor(dateKey){
+  const S = store.read();
+  const w = wdOf(dateKey);
+  const log = S.logs[dateKey] || [];
+  const dayCounts = S.counts[dateKey] || {};
+  const as = anchorsOn(w);
+  const groups = as.map(a => ({ a, w, items: [] }));
+  const un = [];
+  const t = at => anchorTime(at, w);
+
+  const push = it => {
+    /* 只有在「今天开门的锚点」里找得到家，才进组；否则一律回未分配。
+       锚点今天不开门 → 它下面的事项自动浮上来 —— 零写操作。 */
+    const g = it.anchorId ? groups.find(g => g.a.id === it.anchorId) : null;
+    (g ? g.items : un).push(it);
+  };
+
+  S.habits
+    .filter(h => !h.archived)
+    .sort((a,b) => (a.order||0) - (b.order||0))
+    .forEach(h => {
+      if(!(w in h.placement)) return;                  // 这天本来就不做 → 完全不出现
+      const placed = h.placement[w];
+      const tg = h.target || null;
+      const cnt = dayCounts[h.id] || 0;
+      push({ type:'habit', id:h.id, title:h.title, mini:h.mini, icon:h.icon,
+             target: tg, count: cnt,
+             /* 达标 = logs 里有 或者 次数已经够了。
+                后半个条件兜住「把 8 次改成 5 次」这种改目标的当天：counts 没删，显示立刻跟上。 */
+             done: log.includes(h.id) || !!(tg && cnt >= tg.times),
+             anchorId: placed === null ? null : placed,
+             origAnchorId: placed === null ? null : placed,
+             anchorName: null, anchorT: null });
+    });
+
+  (S.extras[dateKey] || []).forEach(e => {
+    push({ type:'extra', id:e.id, title:e.title, mini:e.mini, icon:e.icon || 'default',
+           done: !!e.done, anchorId: e.anchorId || null, origAnchorId: e.anchorId || null });
+  });
+
+  /* 把锚点名称 / 时间带上（回顾明细要用） */
+  const byId = {};
+  S.anchors.forEach(a => { byId[a.id] = a; });
+  groups.forEach(g => g.items.forEach(it => { it.anchorName = g.a.title; it.anchorT = t(g.a); }));
+  un.forEach(it => { it.anchorName = null; it.anchorT = null; });
+
+  return { groups, un, w };
+}
+
+/* 今天页副标题：有人沉到未分配 = "锚点不开门"，否则常态 */
+function headerSub(){
+  if(ui.drag) return '拖到任意两个锚点之间都行';
+  const { groups, un, w } = layoutFor(tkey());
+  const S = store.read();
+  const stranded = un.some(it => it.type === 'habit' && !it.target && it.origAnchorId &&
+    !groups.some(g => g.a.id === it.origAnchorId) &&
+    !!S.anchors.find(a => a.id === it.origAnchorId));
+  if(stranded) return '锚点不开门，事情还在';
+  return '别看时间，看事件';
+}
+
+/* ============================================================================
+ * 渲染
+ * ========================================================================*/
+function headerHTML(){
+  const d = todayD();
+  return `<div class="hdr">
+    <div class="hdr-date">
+      <span>${fmtDate(d)}</span>
+      <span class="more" data-act="open-settings">${ICON.dots}</span>
+    </div>
+    <div class="hdr-row">
+      <div>
+        <div class="hdr-title">今天<span class="spark">${ICON.spark}</span></div>
+        <div class="hdr-sub">${esc(headerSub())}</div>
+      </div>
+      <div class="mascot">${ICON.mascot}</div>
+    </div>
+  </div>`;
+}
+
+/* 圈换样子不换位置：还是 25px、还在原位。
+   普通事项 = 虚线圈；计数型 = 进度弧（1–9 才在圈里写数字，>=10 只留弧）；到量 = 绿勾。 */
+const chkAttr = it => `data-act="check" data-type="${it.type}" data-id="${esc(it.id)}"`;
+
+function chkHTML(it){
+  const attr = chkAttr(it);
+  if(!it.target) return `<div class="chk${it.done?' on':''}" ${attr}></div>`;
+  if(it.done)    return `<div class="chk on" ${attr}></div>`;
+
+  const t = it.target;
+  const n = Math.min(it.count || 0, t.times);
+  const C = 2 * Math.PI * 10;                       // r = 10
+  const arc = n ? `<circle cx="12.5" cy="12.5" r="10" fill="none" stroke="#E8945C" stroke-width="2.4"
+        stroke-linecap="round" stroke-dasharray="${C.toFixed(2)}"
+        stroke-dashoffset="${(C * (1 - n / t.times)).toFixed(2)}"
+        transform="rotate(-90 12.5 12.5)"/>` : '';
+  const num = (n && t.times <= 9) ? `<span class="cnum">${n}</span>` : '';
+  return `<div class="chk ring" ${attr}><svg viewBox="0 0 25 25" width="25" height="25">
+      <circle cx="12.5" cy="12.5" r="10" fill="none" stroke="#F0DCC8" stroke-width="2.4"/>${arc}
+    </svg>${num}</div>`;
+}
+
+function taskHTML(it){
+  const dragging = ui.drag && ui.drag.type === it.type && ui.drag.id === it.id;
+  /* 计数型的副标题优先（它是会变的那条）；「太忙时的最小版」还留着，接在后面 */
+  const cnt = it.target ? `今天 ${countText(it.count, it.target)}` : '';
+  const sub = dragging
+    ? (it.origAnchorId ? '原来挂在「' + esc(anchorTitle(it.origAnchorId)) + '」后面' : '原来还没安排')
+    : [cnt, it.mini ? esc(it.mini) : ''].filter(Boolean).join(' · ');
+  return `<div class="task${it.done?' done':''}" data-type="${it.type}" data-id="${esc(it.id)}">
+    <div class="ico">${ICON[it.icon] || ICON.default}</div>
+    <div class="tt">
+      <div class="t1">${esc(it.title)}</div>
+      ${sub ? `<div class="t2">${sub}</div>` : ''}
+    </div>
+    ${chkHTML(it)}
+    <i class="hit" ${chkAttr(it)}></i>
+  </div>`;
+}
+
+function anchorTitle(id){
+  const a = store.read().anchors.find(x => x.id === id);
+  return a ? a.title : '';
+}
+
+function todayHTML(){
+  const { groups, un } = layoutFor(tkey());
+  const dragging = !!ui.drag;
+
+  /* 计数型（一天 N 次）先挑出来单独放一栏：
+     它们一整天都在进行，不是"打个勾就结束"的事，
+     所以既不参与锚点排序，也不进「已完成」区 —— 到量了留在原位变绿就行。 */
+  const habits = [];
+  groups.forEach(g => g.items.forEach(it => { if(it.target) habits.push(it); }));
+  un.forEach(it => { if(it.target) habits.push(it); });
+
+  /* 已经打过勾的，从原来的位置抽出来，统一放到下面的「已完成」区 */
+  const dones = [];
+  groups.forEach(g => g.items.forEach(it => { if(it.done && !it.target) dones.push(it); }));
+  un.forEach(it => { if(it.done && !it.target) dones.push(it); });
+
+  let h = headerHTML();
+
+  if(habits.length){
+    const hit = habits.filter(it => it.done).length;
+    h += `<div class="habitsec">
+        <div class="habit-head"><span class="hs-title">习惯</span>
+          <span class="hs-num">${hit} / ${habits.length}</span></div>
+        ${habits.map(taskHTML).join('')}
+      </div>`;
+  }
+
+  h += `<div class="timeline">`;
+
+  for(const g of groups){
+    const t = anchorTime(g.a, g.w);
+    const items = g.items.filter(it => !it.done && !it.target);
+    if(!dragging && !items.length){
+      /* 锚点降级：今天没事项安排在这儿的，不画图钉和虚线，压成一行小字 */
+      h += `<div class="anchor-mini" data-anchor="${esc(g.a.id)}">
+          <span class="am-name">${esc(g.a.title)}</span>
+          ${t ? `<span class="am-time">${t}</span>` : ''}
+        </div>`;
+      continue;
+    }
+    h += `<div class="anchor-row" data-anchor="${esc(g.a.id)}">
+        ${ICON.pin}
+        <span class="a-name">${esc(g.a.title)}</span>
+        ${t ? `<span class="a-time">${t}</span>` : ''}
+        <span class="a-dash"></span>
+      </div>`;
+    items.forEach(it => h += taskHTML(it));
+    if(dragging) h += `<div class="slot" data-slot="${esc(g.a.id)}">松手就挂在这里</div>`;
+  }
+
+  const unLeft = un.filter(it => !it.done && !it.target);
+  if(unLeft.length || dragging){
+    if(unLeft.length){
+      h += `<div class="unassigned">
+        <div class="un-head">
+          <span class="un-title">未分配</span>
+        </div>
+        ${unLeft.map(taskHTML).join('')}
+        ${dragging ? `<div class="slot un-slot" data-slot="none">松手 → 今天先不安排</div>` : ''}
+      </div>`;
+    }else{
+      h += `<div class="slot un-slot" data-slot="none">松手 → 今天先不安排</div>`;
+    }
+  }
+
+  if(dones.length){
+    h += `<div class="donesec">
+        <div class="done-head"><span class="done-title">已完成</span><span class="done-num">${dones.length}</span></div>
+        ${dones.map(taskHTML).join('')}
+      </div>`;
+  }
+  h += `</div>`;
+
+  h += `<div class="dragfoot${dragging?' on':''}"><span class="l">松手就生效</span><span>不用确认，也不用保存</span></div>`;
+  h += `<div class="spacer"></div>`;
+  h += `<div class="note-entry" data-act="open-note">${ICON.pen}<span>${store.read().notes[tkey()] ? '碎碎念 · 今天写了' : '碎碎念'}</span></div>`;
+  h += `<div class="add-row" data-act="open-add"><span class="plus">＋</span><span>加一个 · 事项或锚点</span></div>`;
+  return h;
+}
+
+/* ---------- 底部三栏 ---------- */
+function tabbarHTML(){
+  const t = ui.tab;
+  const ic = {
+    today:`<svg width="19" height="19" viewBox="0 0 19 19"><circle cx="9.5" cy="9.5" r="3.6"/><path d="M9.5 1.4v2.2M9.5 15.4v2.2M1.4 9.5h2.2M15.4 9.5h2.2M3.8 3.8l1.6 1.6M13.6 13.6l1.6 1.6M15.2 3.8l-1.6 1.6M5.4 13.6l-1.6 1.6" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    burger:`<svg width="19" height="19" viewBox="0 0 19 19"><path d="M3.4 5.6c0-1.7 2.7-3 6.1-3s6.1 1.3 6.1 3" stroke-width="1.6" stroke-linecap="round"/><path d="M3.2 9h12.6" stroke-width="1.6" stroke-linecap="round"/><path d="M3.4 12.4c0 1.7 2.7 3 6.1 3s6.1-1.3 6.1-3" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    review:`<svg width="19" height="19" viewBox="0 0 19 19"><path d="M4 13.6V9.2M9.5 13.6V4.6M15 13.6v-6" stroke-width="1.8" stroke-linecap="round"/></svg>`
+  };
+  const tab = (k,label) => `<div class="tab${t===k?' on':''}" data-act="tab" data-tab="${k}">
+      <div class="ti">${ic[k]}</div><span>${label}</span></div>`;
+  return `<div class="tabpill">${tab('today','今天')}${tab('burger','汉堡')}${tab('review','回顾')}</div>`;
+}
+
+/* ---------- 汉堡（总览） ---------- */
+function burgerHTML(){
+  const S = store.read();
+  const w = wd();
+  const anchors = anchorsAll();
+  const habits  = S.habits.filter(h => !h.archived).sort((a,b)=>(a.order||0)-(b.order||0));
+
+  let h = `<div class="sub-nav subnav-bar"><span class="sub-date">${fmtDate(todayD())}</span>
+      <span class="addbtn" data-act="open-add" title="新增">＋</span></div>
+    <div class="sub-title">我的汉堡</div>
+    <div class="sub-sub">锚点是你的一天，事项挂在它后面</div>`;
+
+  h += `<div class="sec"><div class="seclabel">锚点</div><div class="panel">`;
+  if(!anchors.length) h += `<div class="rowtxt" style="padding-top:14px">还没有锚点。先想一个每天雷打不动会发生的时刻。</div>`;
+  anchors.forEach((a,i) => {
+    const here = a.rules.some(r => r.days.includes(w));
+    const r0 = a.rules[0] || {};
+    const t = r0.start ? (noEnd(r0.end) ? `${r0.start}-${noEnd(r0.end)}` : r0.start) : '不填时间';
+    if(i) h += `<div class="divider"></div>`;
+    h += `<div class="swipe" data-id="${esc(a.id)}">
+        <span class="swipe-del" data-act="quick-del" data-kind="anchor" data-id="${esc(a.id)}">删除</span>
+        <div class="bgr-row${here?'':' off'}" data-act="edit-anchor" data-id="${esc(a.id)}">
+          <span class="rname">${esc(a.title)}</span>
+          <span class="rtime">${esc(t)}</span>
+          <span class="rgap"></span>
+          <span class="pill">${esc(cycleLabel(a.rules.flatMap(r=>r.days).filter((v,i2,arr)=>arr.indexOf(v)===i2)))}</span>
+          ${ICON.chev}
+        </div>
+      </div>`;
+  });
+  h += `</div></div>`;
+
+  h += `<div class="sec"><div class="seclabel">事项</div><div class="panel">`;
+  if(!habits.length) h += `<div class="rowtxt" style="padding-top:14px">还没有长期事项。加一个吧，明天开始就按周循环了。</div>`;
+  habits.forEach((x,i) => {
+    const days = Object.keys(x.placement).map(Number).sort((a,b)=>a-b);
+    if(i) h += `<div class="divider"></div>`;
+    h += `<div class="swipe" data-id="${esc(x.id)}">
+        <span class="swipe-del" data-act="quick-del" data-kind="habit" data-id="${esc(x.id)}">删除</span>
+        <div class="bgr-row" data-act="edit-habit" data-id="${esc(x.id)}">
+          <span class="rname">${esc(x.title)}</span>
+          <span class="rgap"></span>
+          ${x.target ? `<span class="pill">一天 ${x.target.times}${esc(x.target.unit || '次')}</span>` : ''}
+          <span class="pill">${esc(cycleLabel(days))}</span>
+          ${ICON.chev}
+        </div>
+      </div>`;
+  });
+  h += `</div></div><div class="spacer"></div>`;
+  return h;
+}
+
+/* ---------- 新增 / 编辑 ---------- */
+function dotsHTML(kind, list){
+  return `<div class="dots">` + WEEK.map((w,i) =>
+    `<div class="dot${list.includes(i)?' on':''}" data-act="day" data-kind="${kind}" data-day="${i}">${w}</div>`
+  ).join('') + `</div>`;
+}
+
+function previewText(){
+  const f = ui.form;
+  const t = f.title.trim() || '（还没写）';
+  if(f.isAnchor){
+    const ds = cycleLabel(f.aDays);
+    /* 预览里就把 800 显示成 8:00 —— 这是"她打的东西被认出来了"最直接的反馈 */
+    const t1 = normTime(f.start), t2 = normTime(f.end);
+    const a = t1 === null ? f.start : t1;
+    const b = t2 === null ? f.end  : t2;
+    const time = a ? (b ? `${a}-${b}` : a) : '不填时间';
+    return `${ds} · ${time} · ${t}`;
+  }
+  const where = f.anchorId ? anchorTitle(f.anchorId) : '';
+  const life = f.resident
+    ? ('常驻 · ' + cycleLabel(f.days))
+    : '只有今天';
+  /* 计数只属于常驻事项：一次性事项只活在今天，计数没有意义，所以关掉常驻时它不生效 */
+  const tgt = f.resident ? f.target : null;
+  const cnt = tgt ? `一天 ${tgt.times} ${tgt.unit || '次'}` : '';
+  /* 计数型没有挂载点这回事，别在预览里留一句"先不挂"让她以为还要选 */
+  const place = tgt ? '' : (where ? '挂在' + where : '先不挂');
+  return [life, place, cnt].filter(Boolean).join(' · ');
+}
+
+function addHTML(){
+  const f = ui.form;
+  const isEdit = !!f.type;
+  const isAnchor = f.isAnchor;
+  /* 新增态也给一个返回箭头 —— 从汉堡页进来时不至于只能靠底部页签逃出去 */
+  const nav = isEdit
+    ? `<div class="sub-nav" data-act="back">${ICON.back}<span class="sub-date">改一下</span></div>`
+    : `<div class="sub-nav" data-act="back">${ICON.back}<span class="sub-date">${fmtDate(todayD())}</span></div>`;
+  const title = isAnchor ? '加一个' : '加一个';
+  const sub   = isAnchor ? '设成锚点，顺便给个时间' : '事项，或者一个锚点';
+
+  let h = nav;
+  h += `<div class="sub-title">${title}<span class="spark" style="margin-left:6px">${ICON.spark}</span></div>`;
+  h += `<div class="sub-sub">${sub}</div>`;
+
+  h += `<div class="form">`;
+  h += `<div class="sheet-grip"></div>`;
+
+  /* 这一页能加三样东西：锚点、事项、一天几次的。所以不放"模板 / 分类"行 ——
+     预设选项里只要摆了一条"喝水 8 杯"，整页读起来就变成"习惯专用页"。
+     示例交给输入框自己的占位文字，谁都能在这儿填任何东西。 */
+  h += `<div class="fld"><div class="flabel">做什么</div>
+      <input class="finput" id="fTitle" value="${esc(f.title)}" placeholder="${isAnchor ? '例如：午休' : '例如：冥想 10 分钟'}" autocomplete="off"></div>`;
+
+  /* 「一天要做几次」紧跟在「做什么」后面 —— 它是这张表单里第二重要的选择，
+     不能夹在一堆开关中间当占位提示。留空 = 普通事项，填了 = 计数型（进「习惯」栏）。 */
+  if(!isAnchor && f.type !== 'extra'){
+    h += `<div class="fld"><div class="flabel">一天要做几次？</div>
+        <input class="finput" id="fTarget" value="${esc(targetInput(f.target))}" placeholder="例如（喝水）8 杯" autocomplete="off">
+        <div class="hint" id="fTargetHint">留空 = 只做一次。填了会进「习惯」栏，点一下加一次。</div></div>`;
+  }
+
+  if(!isEdit){
+    h += `<div class="frow"><div><div class="ftxt">设为锚点</div>
+        <div class="fdesc">固定事件，只当钉子用</div></div>
+        <div class="switch${isAnchor?' on':''}" data-act="toggle-anchor"><i></i></div></div>`;
+  }
+
+  if(isAnchor){
+    const [sh, sm] = splitTime(f.start);
+    const [eh, em] = splitTime(f.end);
+    h += `<div class="fld"><div class="flabel">哪几天</div>${dotsHTML('a', f.aDays)}</div>`;
+    h += `<div class="fld"><div class="flabel">锚点时间（可留空）</div>
+        <div class="time-row">
+          <span class="tgroup">
+            <input class="finput" id="fStartH" data-t="start" data-p="h" value="${esc(sh)}" placeholder="08" inputmode="numeric" maxlength="2" autocomplete="off">
+            <span class="tcolon">:</span>
+            <input class="finput" id="fStartM" data-t="start" data-p="m" value="${esc(sm)}" placeholder="00" inputmode="numeric" maxlength="2" autocomplete="off">
+          </span>
+          <span class="to">到</span>
+          <span class="tgroup">
+            <input class="finput" id="fEndH" data-t="end" data-p="h" value="${esc(eh)}" placeholder="09" inputmode="numeric" maxlength="2" autocomplete="off">
+            <span class="tcolon">:</span>
+            <input class="finput" id="fEndM" data-t="end" data-p="m" value="${esc(em)}" placeholder="00" inputmode="numeric" maxlength="2" autocomplete="off">
+          </span>
+        </div>
+        <div class="hint">左边小时、右边分钟，分钟空着就算 00<br>结束那组留空 = 只有开始这一个时间点（填 0 也一样）<br>两组都不填也行</div></div>`;
+  }else{
+    h += `<div class="fld"><div class="flabel">太忙时的最小版（可留空）</div>
+        <input class="finput" id="fMini" value="${esc(f.mini)}" placeholder="例如：太忙就 3 次深呼吸" autocomplete="off"></div>`;
+
+    h += `<div class="fld"><div class="flabel">图标</div>
+        <div class="picker">${ICON_ORDER.map(k =>
+          `<div class="pick${f.icon===k?' on':''}" data-act="pick-icon" data-id="${k}">${ICON[k]}</div>`).join('')}</div></div>`;
+    if(!isEdit || f.type === 'habit'){
+      h += `<div class="frow"><div><div class="ftxt">常驻</div>
+          <div class="fdesc">打开 = 每天都做；关着 = 只有今天</div></div>
+          <div class="switch${f.resident?' on':''}" data-act="toggle-resident"><i></i></div></div>`;
+    }
+    if(f.resident){
+      h += `<div class="fld"><div class="flabel">哪几天</div>${dotsHTML('h', f.days)}</div>`;
+    }
+    /* 按次数记的没有"某个时刻"可言 —— 它整天都在发生，所以不给锚点选择。
+       上面那行说明已经讲清了它会待在「习惯」栏，这里不再重复一遍。 */
+    if(!f.target){
+      h += `<div class="fld"><div class="flabel">挂在哪个锚点后面</div><div class="chips">
+        <div class="chip${f.anchorId===''?' on':''}" data-act="pick-anchor" data-id="">先不挂</div>
+        ${anchorsOn(wd()).map(a =>
+          `<div class="chip${f.anchorId===a.id?' on':''}" data-act="pick-anchor" data-id="${esc(a.id)}">${esc(a.title)}</div>`).join('')}
+      </div></div>`;
+    }
+  }
+
+  h += `<div class="preview">${esc(previewText())}</div>`;
+  h += `<button class="btn" data-act="save-add">存下来</button>`;
+  h += `</div>`;
+
+  if(isEdit){
+    h += `<div class="danger" data-act="delete-item"><span>删掉这个${isAnchor?'锚点':'事项'}</span></div>`;
+  }
+
+  h += `<div class="foot-note"><span>${isAnchor ? '锚点只当钉子' : (f.resident ? '按周循环，不用每天管' : '过了今天就不在了')}</span>
+      <span>${isAnchor ? '不参与打卡' : ''}</span></div>`;
+  return h;
+}
+
+/* ---------- 手账写作页 ---------- */
+function noteHTML(){
+  const k = ui.noteD || tkey();
+  const d = pdate(k);
+  const txt = store.read().notes[k] || '';
+  return `<div class="sub-nav" data-act="back">${ICON.back}<span class="sub-date">${fmtDate(d)}</span></div>
+    <div class="sub-title">碎碎念</div>
+    <div class="editor"><textarea id="noteInput" placeholder="今天怎么样？写两句就行…">${esc(txt)}</textarea></div>
+    <div class="hint">写多少都行 · 写完就不用管了</div>`;
+}
+
+/* ---------- 说明书 ----------
+   第一次打开盖一层，4 页，关掉就没了。设置里能再翻。
+   画面全是自己画的「示意界面」，不用真截图：字是矢量的、离线白拿、
+   以后改今天页的布局也不会把它一起弄坏。 */
+const H_ARROW = `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6.6 3.6L12 9l-5.4 5.4" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const H_CLOSE = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.4 3.4l10.2 10.2M13.6 3.4L3.4 13.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+const HOWTO_PAGES = [
+  {
+    title: '你的一天，分两块',
+    desc: '上面是<b>锚点</b>——每天固定会发生的时刻，比如起床、午饭、下班进门。下面每件事，都挂在其中一个后面。一天几次的会多一栏，后面单独讲。',
+    tip: '',
+    art: `<div class="mini">
+        <div class="mi-date">10月19日 周一</div>
+        <div class="mi-box">
+          <span class="mi-num">1</span>
+          <div class="mi-label">锚点</div>
+          <div class="mi-anchor"><span class="mi-an">起床后</span><span class="mi-at">7:00</span><span class="mi-dash"></span></div>
+          <div class="mi-anchor"><span class="mi-an">午饭后</span><span class="mi-at">12:00-12:30</span><span class="mi-dash"></span></div>
+          <div class="mi-anchor"><span class="mi-an">下班进门</span><span class="mi-at">18:30</span><span class="mi-dash"></span></div>
+        </div>
+        <div class="mi-box" style="margin:17px -7px 0">
+          <span class="mi-num">2</span>
+          <div class="mi-label">事项</div>
+          <div class="mi-task"><span class="mi-chk"></span><span class="mi-tt">冥想 10 分钟</span></div>
+          <div class="mi-task"><span class="mi-chk"></span><span class="mi-tt">散步 15 分钟</span></div>
+        </div>
+      </div>`
+  },
+  {
+    title: '加事项和锚点',
+    desc: '右上角的＋能加两样东西：<b>锚点</b>，和要挂在它后面的长期事项。要一天做几次的，也是在这一页填。',
+    tip: '<b>这一条容易踩坑</b>：不打开「常驻」，这件事就只在今天出现一次，明天自动就没了。',
+    art: `<div class="mini">
+        <div class="mi-field">午饭后<span class="mi-caret"></span></div>
+        <div class="mi-label">哪几天</div>
+        <div class="mi-dots"><i class="on">一</i><i class="on">二</i><i class="on">三</i><i class="on">四</i><i class="on">五</i><i>六</i><i>日</i></div>
+        <div class="mi-row" style="margin-top:2px">
+          <span class="mi-k">常驻</span><span class="mi-sw"><i></i></span><span class="mi-v">只有今天</span>
+        </div>
+      </div>`
+  },
+  {
+    title: '一天几次的，单独一栏',
+    desc: '填了次数的，不挂在锚点后面，而是待在今天页最上面这一栏。点一下加一次，一天之内随时点。',
+    tip: '到量了就停在原地变绿，<b>不会跑进「已完成」</b>。第二天从 0 重新开始。',
+    art: `<div class="mini plain">
+        <div class="mi-date">10月19日 周一</div>
+        <div class="mi-hb">
+          <div class="mi-hhead"><span class="mi-hname">习惯</span><span class="mi-hnum">1 / 3</span></div>
+          <div class="mi-hrow">
+            <span class="mi-hico">${ICON.water}</span>
+            <span class="mi-htx"><span class="mi-tt">喝水</span><span class="mi-hsub">今天 3 / 8 杯</span></span>
+            <span class="mi-hring"><svg viewBox="0 0 20 20" width="20" height="20">
+              <circle cx="10" cy="10" r="7.5" fill="none" stroke="#F0DCC8" stroke-width="2"></circle>
+              <circle cx="10" cy="10" r="7.5" fill="none" stroke="#E8945C" stroke-width="2"
+                stroke-linecap="round" stroke-dasharray="47.12" stroke-dashoffset="29.45"
+                transform="rotate(-90 10 10)"></circle>
+            </svg><b>3</b></span>
+          </div>
+          <div class="mi-hrow done">
+            <span class="mi-hico">${ICON.stretch}</span>
+            <span class="mi-htx"><span class="mi-tt">起身活动</span><span class="mi-hsub">今天 4 / 4 次</span></span>
+            <span class="mi-hck"></span>
+          </div>
+          <div class="mi-hrow">
+            <span class="mi-hico">${ICON.medicine}</span>
+            <span class="mi-htx"><span class="mi-tt">按时吃药</span><span class="mi-hsub">今天 0 / 2 次</span></span>
+            <span class="mi-hring"><svg viewBox="0 0 20 20" width="20" height="20">
+              <circle cx="10" cy="10" r="7.5" fill="none" stroke="#F0DCC8" stroke-width="2"></circle>
+            </svg></span>
+          </div>
+        </div>
+      </div>`
+  },
+  {
+    title: '按住能挪',
+    desc: '按住卡片不松手，就能把它拖到别的锚点后面。松手就挂在那儿了。',
+    tip: '拖到最上面那个「未分配」，只是今天先不做，不会影响别的日子。',
+    art: `<div class="mini">
+        <div class="mi-date">10月19日 周一</div>
+        <div class="mi-anchor"><span class="mi-an">午饭后</span><span class="mi-at">12:00</span><span class="mi-dash"></span></div>
+        <div class="mi-slot">松手就挂在这儿</div>
+        <div class="mi-task mi-lift"><span class="mi-chk"></span><span class="mi-tt">散步 15 分钟</span></div>
+        <div class="mi-task"><span class="mi-chk"></span><span class="mi-tt">阅读 15 分钟</span></div>
+      </div>`
+  },
+  {
+    title: '往左滑能删',
+    desc: '在汉堡页往左滑，露出删除，点一下直接删掉，不用点进去。',
+    tip: '删掉锚点不会把事项一起删掉，它们只是回到「未分配」。',
+    art: `<div class="mini">
+        <div class="mi-date">10月19日 周一</div>
+        <div class="mi-anchor"><span class="mi-an">午饭后</span><span class="mi-at">12:00</span><span class="mi-dash"></span></div>
+        <div class="mi-srow">
+          <div class="mi-del">删除</div>
+          <div class="mi-task"><span class="mi-chk"></span><span class="mi-tt">散步 15 分钟</span></div>
+        </div>
+        <div class="mi-task"><span class="mi-chk"></span><span class="mi-tt">阅读 15 分钟</span></div>
+      </div>`
+  },
+  {
+    title: '回顾只看次数',
+    desc: '上面是<b>按月的日历</b>，颜色越深＝那天做完的越多。点某一天，下面就是那天做的事；最下面那行能看整年。',
+    tip: '只数次数，不算完成率，也不追连续天数——断了就断了，接着做就行。',
+    art: `<div class="mini plain">
+        <div class="mi-card">
+          <div class="mi-mstat">
+            <span class="mi-mnum">42</span><span class="mi-mlab">次 ·</span>
+            <span class="mi-mnav"><span class="ar">‹</span>10月<span class="ar">›</span></span>
+          </div>
+          <div class="mi-grid">
+            <i class="c"></i><i class="b"></i><i class="b"></i><i class="a"></i><i class="c"></i><i class="a"></i>
+            <i class="c"></i><i class="b pk"></i><i class="a"></i><i class="b"></i><i class="c"></i><i class="b"></i>
+            <i class="a"></i><i class="b"></i><i class="c"></i><i class="c"></i><i class="b"></i><i class="a"></i>
+            <i class="b"></i><i class="a"></i><i></i><i class="c"></i><i class="a"></i><i class="b"></i>
+            <i class="c"></i><i class="b"></i><i class="a"></i><i class="b"></i><i></i><i class="a"></i>
+          </div>
+          <div class="mi-legend">
+            <span><i class="c"></i>越深 = 3 项</span>
+            <span><i class="b"></i>中间 = 2 / 1 项</span>
+            <span><i></i>浅 = 没做</span>
+          </div>
+        </div>
+        <div class="mi-card">
+          <div class="mi-dhead"><span>10月19日 · 周一</span><span class="mi-cnt">3 项</span></div>
+          <div class="mi-dl"><span class="mi-dc"></span><span>冥想 10 分钟</span><span class="mi-dg"></span><span class="mi-dt">早上 7:00</span></div>
+          <div class="mi-dl"><span class="mi-dc"></span><span>散步 15 分钟</span><span class="mi-dg"></span><span class="mi-dt">午饭后 12:00</span></div>
+        </div>
+        <div class="mi-card mi-more">
+          <span class="mi-mt">看这一年的</span><span class="mi-pill">每个月的次数</span><span class="ar">›</span>
+        </div>
+      </div>`
+  }
+];
+
+function howtoHTML(){
+  const N = HOWTO_PAGES.length;
+  const i = Math.max(0, Math.min(N - 1, ui.howtoI || 0));
+  const pages = HOWTO_PAGES.map(p => `
+    <div class="hpage">
+      ${p.art}
+      <div class="htxt">
+        <div class="htitle">${p.title}</div>
+        <div class="hdesc">${p.desc}</div>
+        ${p.tip ? `<div class="htip">${p.tip}</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  return `<div class="howto">
+    <div class="hx" data-act="howto-close">${H_CLOSE}</div>
+    <div class="hview" id="hView">
+      <div class="htrack" id="hTrack" style="transform:translateX(-${i * 100}%)">${pages}</div>
+    </div>
+    <div class="hfoot">
+      <div class="hdots" id="hDots">${HOWTO_PAGES.map((_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('')}</div>
+      <div class="hnext${i === N - 1 ? ' wide' : ''}" id="hNext" data-act="howto-next">${i === N - 1 ? '开始用' : H_ARROW}</div>
+    </div>
+  </div>`;
+}
+
+/* 翻页只改 transform，不重渲染 —— 手指跟着走才顺 */
+function howtoGo(n){
+  const N = HOWTO_PAGES.length;
+  n = Math.max(0, Math.min(N - 1, n));
+  ui.howtoI = n;
+  const track = $('hTrack');
+  if(track) track.style.transform = `translateX(-${n * 100}%)`;
+  const dots = $('hDots');
+  if(dots) [...dots.children].forEach((d, k) => d.classList.toggle('on', k === n));
+  const btn = $('hNext');
+  if(btn){
+    const last = n === N - 1;
+    btn.classList.toggle('wide', last);
+    btn.innerHTML = last ? '开始用' : H_ARROW;
+  }
+  const v = $('hView');
+  if(v) v.scrollTop = 0;
+}
+
+function howtoClose(){
+  store.mutate(S => { S.seenHowto = true; });
+  ui.howtoI = 0;
+  /* 从设置点进来的，关掉就回设置；开机自动弹的，关掉进今天页 */
+  ui.screen = ui.howtoFrom || 'today';
+  ui.howtoFrom = null;
+  if(ui.screen === 'today' || ui.screen === 'burger' || ui.screen === 'review') ui.tab = ui.screen;
+  render();
+}
+
+/* 左右滑翻页。只在说明书这层里认，关掉之后这段什么也不做。 */
+let hDrag = null;
+document.addEventListener('pointerdown', e => {
+  hDrag = null;
+  if(ui.screen !== 'howto') return;
+  if(e.button !== undefined && e.button !== 0) return;
+  if(e.target.closest('.hnext,.hx')) return;      // 按钮自己走 click
+  hDrag = { x0: e.clientX, y0: e.clientY, on: false };
+});
+document.addEventListener('pointermove', e => {
+  const d = hDrag;
+  if(!d) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+  if(!d.on){
+    if(Math.abs(dx) < 9 && Math.abs(dy) < 9) return;
+    if(Math.abs(dy) > Math.abs(dx)){ hDrag = null; return; }   // 她在上下划，不抢
+    d.on = true;
+    const t = $('hTrack');
+    if(t) t.style.transition = 'none';
+  }
+  const v = $('hView'), t = $('hTrack');
+  if(!v || !t) return;
+  const W = v.getBoundingClientRect().width || 1;
+  const i = ui.howtoI || 0;
+  let x = -i * W + dx;
+  if(x > 0) x *= .25;                                  // 第一页往右拉，给点阻尼
+  if(x < -(HOWTO_PAGES.length - 1) * W) x = -(HOWTO_PAGES.length - 1) * W + (x + (HOWTO_PAGES.length - 1) * W) * .25;
+  t.style.transform = `translateX(${x}px)`;
+});
+document.addEventListener('pointerup', e => {
+  const d = hDrag; hDrag = null;
+  if(!d || !d.on) return;
+  const v = $('hView'), t = $('hTrack');
+  if(t) t.style.transition = '';
+  const W = v ? (v.getBoundingClientRect().width || 1) : 1;
+  const dx = e.clientX - d.x0;
+  const i = ui.howtoI || 0;
+  if(dx < -W * .2 && i < HOWTO_PAGES.length - 1) howtoGo(i + 1);
+  else if(dx > W * .2 && i > 0) howtoGo(i - 1);
+  else howtoGo(i);                                     // 不够格，弹回去
+});
+document.addEventListener('pointercancel', () => {
+  if(hDrag && hDrag.on) howtoGo(ui.howtoI || 0);
+  hDrag = null;
+});
+
+/* ---------- 设置 ---------- */
+function settingsHTML(){
+  const S = store.read();
+  const anchors = anchorsAll();
+
+  let h = `<div class="sub-nav" data-act="back">${ICON.back}</div>
+    <div class="sub-title">设置</div>`;
+
+  h += `<div class="sec"><div class="seclabel">先看一眼</div><div class="panel">
+      <div class="row" data-act="open-howto"><span class="rname">怎么看这个</span>
+        <span class="rgap"></span>${ICON.chev}</div>
+      <div class="rowtxt">6 页：怎么加、常驻是什么意思、一天几次的放哪儿、怎么挪、怎么删、回顾看什么。第一次打开时也会自动出来一次。</div>
+    </div></div>`;
+
+  h += `<div class="sec"><div class="seclabel">锚点</div><div class="panel">`;
+  anchors.forEach((a,i) => {
+    const days = a.rules.flatMap(r => r.days).filter((v,i2,arr)=>arr.indexOf(v)===i2);
+    const t = a.rules[0] && a.rules[0].start
+      ? (noEnd(a.rules[0].end) ? `${a.rules[0].start}-${noEnd(a.rules[0].end)}` : a.rules[0].start)
+      : '';
+    if(i) h += `<div class="divider"></div>`;
+    h += `<div class="row" data-act="edit-anchor" data-id="${esc(a.id)}">
+        <span class="rname">${esc(a.title)}</span>
+        ${t ? `<span class="rtime">${t}</span>` : ''}
+        <span class="rgap"></span>
+        <span class="pill">${esc(cycleLabel(days))}</span>
+        ${ICON.chev}
+      </div>`;
+  });
+  h += `<div class="divider"></div>
+      <div class="row addr" data-act="open-add-anchor"><span class="plus" style="width:20px;height:20px;font-size:14px">＋</span>新增锚点</div></div></div>`;
+
+  h += `<div class="sec"><div class="seclabel">备份</div><div class="panel">
+      <div class="row" data-act="export-backup"><span class="rname">导出备份</span>
+        <span class="rgap"></span>${ICON.chev}</div>
+      <div class="rowtxt">记录只在这台手机里，所以给它留条出路。导出后存进微信文件传输助手或者云盘，换手机、误清了数据的时候用它救回来。</div>
+      <div class="divider"></div>
+      <div class="row" data-act="import-backup"><span class="rname">从备份恢复</span>
+        <span class="rgap"></span>${ICON.chev}</div>
+      <div class="rowtxt">会用备份里的内容覆盖这台手机现在的全部记录。</div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div></div>`;
+
+  h += `<div class="sec"><div class="seclabel">云同步</div><div class="panel">
+      <div class="row" style="cursor:default"><span class="rname">云同步</span><span class="rgap"></span>
+        <span class="pill">单机版</span></div>
+      <div class="rowtxt">这一份是公开的单机版：记录只存在你自己的浏览器里，不向任何服务器发送数据。想要多端同步，得自己接一个后端。</div>
+    </div></div>`;
+
+  /* 数据占用：只显示，不自动清理。打卡流水一天几十字节，十年也就一百多 KB；
+     真正占地方的是碎碎念。两种异常分开说——「快满了」还有余地，「没存上」是已经出事了。 */
+  const sz = dataSize(JSON.stringify(store.read()));
+  const failed = store.saveFailed();
+  const nearFull = sz >= SAVE_WARN_AT;
+  const label = failed ? '这次没存上' : nearFull ? '快存满了' : '已存数据';
+  const hint  = failed
+    ? '先导出备份，别再往里写了。空出位置后新记的才会存住。'
+    : nearFull
+      ? '先导出备份，再考虑清掉一些碎碎念。'
+      : '打卡记录不占地方——一天几十字节，写十年也就一百多 KB。占空间的是碎碎念。';
+
+  h += `<div class="sec"><div class="seclabel">关于</div><div class="panel">
+      <div class="row" style="cursor:default"><span class="rname">汉堡包计划</span><span class="rgap"></span>
+        <span class="pill">版本 ${APP_VER}</span></div>
+      <div class="rowtxt">只做记录，不做考核。不追连续天数，也不算完成率。</div>
+      <div class="divider"></div>
+      <div class="row" style="cursor:default">
+        <span class="rname"${(failed||nearFull)?' style="color:#C0504A"':''}>${label}</span>
+        <span class="rgap"></span>
+        <span class="pill"${(failed||nearFull)?' style="background:#FBE5E3;color:#C0504A"':''}>${fmtBytes(sz)}</span></div>
+      <div class="rowtxt">${hint}</div>
+    </div></div>`;
+
+  h += `<div class="danger" data-act="reset-all" style="margin-top:4px"><span>清空全部数据，从空白开始</span></div>`;
+  h += `<div class="spacer"></div>`;
+  return h;
+}
+
+/* ---------- 回顾 ---------- */
+function calHTML(){
+  const S = store.read();
+  const y = ui.calM.y, m = ui.calM.m;
+  const days = new Date(y, m+1, 0).getDate();
+  const tk = tkey();
+
+  let total = 0, cells = '';
+  for(let i=1;i<=days;i++){
+    const k = dkey(new Date(y, m, i));
+    const c = (S.logs[k] || []).length;
+    total += c;
+    const fut = k > tk;
+    const lv = fut ? '' : (c===0 ? '' : c===1 ? 'lv1' : c===2 ? 'lv2' : 'lv3');
+    const cls = ['pd', lv, fut?'future':'', k===tk?'today':'', k===ui.reviewD?'picked':''].filter(Boolean).join(' ');
+    cells += `<div class="${cls}" data-act="pick-day" data-date="${k}"></div>`;
+  }
+
+  return `<div class="cal">
+    <div class="mstat">
+      <span class="mnum">${total}</span>
+      <span class="mlab">次 ·</span>
+      <span class="mchg" data-act="mprev">‹</span>
+      <span class="mmon">${m+1}月</span>
+      <span class="mchg" data-act="mnext">›</span>
+    </div>
+    <div class="dotsgrid">${cells}</div>
+    <!-- 只解释颜色深浅这三档。空心圈＝还没到的日子、外圈＝今天，都是一眼就懂的，
+         而且原来那行把「空心圈」写成「今天」，是错的（今天是多套一圈那个），索性不写。 -->
+    <div class="legend">
+      <span><i style="background:#FFAE6E"></i>越深 = 3 项</span>
+      <span><i style="background:#FFCB9C"></i>中间 = 2 / 1 项</span>
+      <span><i style="background:#F3E7DA"></i>浅 = 没做</span>
+    </div>
+  </div>`;
+}
+
+function reviewHTML(){
+  const k = ui.reviewD;
+  const d = pdate(k);
+  const S = store.read();
+  const { groups, un, w } = layoutFor(k);
+  const note = S.notes[k] || '';
+
+  /* 完成几项按 items 自己算（计数型「次数够了就算达标」的口径才跟上面今天页一致） */
+  const all = [];
+  groups.forEach(g => g.items.forEach(it => all.push(it)));
+  un.forEach(it => all.push(it));
+  const doneCount = all.filter(it => it.done).length;
+
+  let h = `<div class="sub-nav"><span class="sub-date">${fmtDate(todayD())}</span></div>
+    <div class="sub-title">回顾</div>
+    <div class="sub-sub">颜色越深，那天做完的越多</div>`;
+
+  h += calHTML();
+
+  h += `<div class="detail">
+    <div class="detail-head">
+      <span class="detail-date">${d.getMonth()+1}月${d.getDate()}日 · 周${WEEK[d.getDay()]}</span>
+      <span class="detail-count">${doneCount ? doneCount + ' 项' : '没打卡'}</span>
+    </div>`;
+
+  if(all.length){
+    all.forEach(it => {
+      /* 计数型不属于任何锚点，右边那栏说「未分配」会让人以为忘了安排 */
+      const where = it.target ? '习惯'
+        : (it.anchorName ? it.anchorName + ' ' + (it.anchorT||'') : '未分配');
+      h += `<div class="dline${it.done?'':' off'}">
+          <span class="dc${it.done?' on':''}"></span>
+          <span class="dn">${esc(it.title)}</span>
+          ${it.target ? `<span class="dcnt">· ${countText(it.count, it.target)}</span>` : ''}
+          <span class="dg"></span>
+          <span class="dt">${esc(where)}</span>
+        </div>`;
+    });
+  }else{
+    h += `<div class="dline off" style="color:#C9B49C"><span class="dn">这天没有记录</span></div>`;
+  }
+
+  h += `<div class="noteblock">
+      <div class="notelabel">那天写的</div>
+      ${note ? `<div class="notetext">${esc(note)}</div>` : `<div class="empty">这天没写</div>`}
+      <div class="linknote" data-act="open-note" data-date="${k}">${note ? '接着写' : '补记一句'}</div>
+    </div>`;
+  h += `</div>`;
+
+  h += `<div class="panel"><div class="row" data-act="open-year">
+      <span class="rname" style="font-size:13.5px">看这一年的</span>
+      <span class="rgap"></span><span class="pill">每个月的次数</span>${ICON.chev}</div></div>`;
+  h += `<div class="spacer"></div>`;
+  return h;
+}
+
+/* ---------- 年度表 ---------- */
+function yearHTML(){
+  const S = store.read();
+  const y = todayD().getFullYear();
+  const habits = S.habits.filter(h => !h.archived).sort((a,b)=>(a.order||0)-(b.order||0));
+
+  const counts = habits.map(x => {
+    const per = new Array(12).fill(0);
+    for(const k in S.logs){
+      const d = pdate(k);
+      if(d.getFullYear() !== y) continue;
+      if((S.logs[k] || []).includes(x.id)) per[d.getMonth()]++;
+    }
+    return per;
+  });
+  const maxN = Math.max(1, ...counts.flat());
+
+  let h = `<div class="sub-nav" data-act="back">${ICON.back}</div>
+    <div class="sub-title">这一年</div>
+    <div class="sub-sub">${y} · 每个月做几次</div>`;
+
+  h += `<div class="ytable"><table><thead><tr><th class="h">事项</th>`;
+  for(let m=1;m<=12;m++) h += `<th>${m}月</th>`;
+  h += `<th>全年合计</th></tr></thead><tbody>`;
+
+  habits.forEach((x,idx) => {
+    const per = counts[idx];
+    const tot = per.reduce((a,b)=>a+b,0);
+    h += `<tr><td class="h">${esc(x.title)}</td>`;
+    per.forEach(n => {
+      const lv = n===0 ? 0 : n <= maxN/3 ? 1 : n <= maxN*2/3 ? 2 : 3;
+      h += `<td class="n">${n ? `<span class="cell c${lv}">${n}</span>` : `<span class="cell c0"></span>`}</td>`;
+    });
+    h += `<td class="tot"><span class="cell tot">${tot} 次</span></td></tr>`;
+  });
+
+  if(!habits.length) h += `<tr><td class="h" colspan="14" style="color:#C0AC99;font-weight:500">还没有长期事项</td></tr>`;
+  h += `</tbody></table></div>`;
+  h += `<div class="hint">只有次数，没有分母。一次性事项不进这张表。</div>`;
+  h += `<div class="spacer"></div>`;
+  return h;
+}
+
+/* ---------- 主渲染 ---------- */
+function chkMenuHTML(){
+  const m = ui.chkMenu;
+  const n = (store.read().counts[tkey()] || {})[m.id] || 0;
+  return `<div class="chkmenu" style="left:${m.x}px;top:${m.y}px">
+      <div class="mi${n ? '' : ' off'}" data-act="chk-minus">减一</div>
+      <div class="mi" data-act="chk-ok">今天就这样</div>
+    </div>`;
+}
+
+function render(){
+  const s = ui.screen;
+  const app = $('app');
+  /* 打勾引起的那次重绘要留在原地，别把人弹回顶部 */
+  const keepTop = ui.keepScroll ? app.scrollTop : 0;
+  ui.keepScroll = false;
+  if(s !== 'today') ui.chkMenu = null;      // 换屏了，长按菜单不该跟过去
+
+  if(s === 'today')        app.innerHTML = todayHTML();
+  else if(s === 'burger')  app.innerHTML = burgerHTML();
+  else if(s === 'review')  app.innerHTML = reviewHTML();
+  else if(s === 'add')     app.innerHTML = addHTML();
+  else if(s === 'note')    app.innerHTML = noteHTML();
+  else if(s === 'settings')app.innerHTML = settingsHTML();
+  else if(s === 'howto')   app.innerHTML = howtoHTML();
+  else if(s === 'year')    app.innerHTML = yearHTML();
+
+  if(s === 'today' && ui.chkMenu) app.innerHTML += chkMenuHTML();
+
+  app.classList.toggle('subpage', s==='add' || s==='note' || s==='settings' || s==='year');
+
+  const showTabs = (s==='today' || s==='burger' || s==='review' || s==='add');
+  $('tabbar').style.display = showTabs ? '' : 'none';
+  if(showTabs){
+    if(s !== 'add') ui.tab = s;
+    $('tabbar').innerHTML = tabbarHTML();
+  }
+  if(s === 'note'){
+    const t = $('noteInput');
+    if(t && !t.dataset.focused){
+      t.dataset.focused = '1';
+      t.focus();
+      try{ t.setSelectionRange(t.value.length, t.value.length); }catch(e){}
+    }
+  }
+  if(s === 'add') initPicker();
+  if(s === 'today' && !ui.drag) app.scrollTop = keepTop;
+}
+
+/* ---------- toast（只用于"不能这么做"的提示，不用来确认成功） ---------- */
+let toastT;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('on'), 1600);
+}
+
+/* ============================================================================
+ * 备份 —— 数据只躺在这台手机里，所以必须留一条出得来的路
+ *   iOS 上走的是 Safari 的下载，文件落进「文件」App
+ * ========================================================================*/
+function exportBackup(){
+  const blob = new Blob([store.snapshot()], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = '汉堡包计划-备份-' + dkey(new Date()) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('已存进「文件」App');
+}
+
+function importBackup(file){
+  const r = new FileReader();
+  const fail = () => toast('这个文件读不出来');
+  r.onerror = fail;
+  r.onload = () => {
+    try{
+      const txt = String(r.result);
+      const o = JSON.parse(txt);
+      /* 先确认是我们自己的备份，别把随便一个 json 灌进来 */
+      if(!o || typeof o !== 'object' || !Array.isArray(o.anchors) || !Array.isArray(o.habits)) throw 0;
+      store.replace(txt);
+      ui.form = blankForm();
+      ui.tab = 'today';
+      ui.screen = 'today';
+      render();
+      toast('恢复好了');
+    }catch(err){ fail(); }
+  };
+  r.readAsText(file);
+}
+
+/* ============================================================================
+ * 写操作 —— 全部走 store.mutate
+ * ========================================================================*/
+/* 打勾：先让卡片滑走（300ms），再真正落库 + 重绘。
+   重绘时如果拖到一半被人连着点，就直接落库，不排队等动画。 */
+/* ---------- 打勾时的「滑到新位置」（FLIP） ----------
+   她不要淡出消失，要"直接下移到已完成"。
+   做法：重绘前把每张卡片 / 每个锚点行的位置记下来；重绘后先把它们用 transform
+   推回原来那个位置，再动画归零 —— 视觉上就是卡片自己滑到了新位置，全程看得见。 */
+/* 滑到新位置用多久（毫秒）。抽成变量是为了验证时能整体放慢拍成 GIF */
+let FLIP_MS = 440;
+
+function flipKey(el){
+  if(el.classList.contains('task')) return 't|' + el.dataset.type + '|' + el.dataset.id;
+  if(el.dataset.anchor) return 'a|' + el.dataset.anchor;
+  return null;
+}
+
+function flipSnapshot(){
+  const map = new Map();
+  document.querySelectorAll('#app .task, #app [data-anchor]').forEach(el => {
+    const key = flipKey(el);
+    if(!key) return;
+    const r = el.getBoundingClientRect();
+    map.set(key, { top: r.top, left: r.left });
+  });
+  return map;
+}
+
+function flipPlay(prev){
+  if(!prev || !prev.size) return;
+  document.querySelectorAll('#app .task, #app [data-anchor]').forEach(el => {
+    const key = flipKey(el);
+    const p = key && prev.get(key);
+    if(!p) return;
+    const r = el.getBoundingClientRect();
+    const dy = p.top - r.top, dx = p.left - r.left;
+    if(Math.abs(dy) < 1 && Math.abs(dx) < 1) return;
+
+    el.style.transition = 'none';
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    el.classList.add('flipping');
+    /* 两帧：先让"退回原位"这帧真的画出来，再开始过渡，否则会被合并成一次跳变 */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = `transform ${FLIP_MS / 1000}s cubic-bezier(.32,.72,.35,1)`;
+      el.style.transform = 'translate(0, 0)';
+    }));
+    setTimeout(() => {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.classList.remove('flipping');
+    }, FLIP_MS + 40);
+  });
+}
+
+function toggleCheck(type, id){
+  const prev = flipSnapshot();
+  const k = tkey();
+  store.mutate(S => {
+    if(type === 'habit'){
+      const arr = S.logs[k] || (S.logs[k] = []);
+      const i = arr.indexOf(id);
+      if(i < 0) arr.push(id); else arr.splice(i,1);
+      if(!arr.length) delete S.logs[k];
+    }else{
+      const it = (S.extras[k] || []).find(x => x.id === id);
+      if(it) it.done = !it.done;
+    }
+  });
+
+  ui.keepScroll = true;
+  render();
+  flipPlay(prev);
+}
+
+/* ---------- 计数型：点一下 +1，长按给「减一 / 今天就这样」 ----------
+   注意 logs 的语义没变：还是「这一天达标了」。只有 counts 到量才写进去，
+   所以年度表 / 月度点阵 / 回顾那套统计口径一个字都不用改。 */
+function bumpCount(id, delta){
+  const prev = flipSnapshot();
+  const k = tkey();
+  store.mutate(S => {
+    const h = S.habits.find(x => x.id === id);
+    if(!h || !h.target) return;
+    const day = S.counts[k] || (S.counts[k] = {});
+    const next = Math.max(0, (day[id] || 0) + delta);
+    if(next) day[id] = next; else delete day[id];
+    if(!Object.keys(day).length) delete S.counts[k];
+
+    const log = S.logs[k] || (S.logs[k] = []);
+    const i = log.indexOf(id);
+    if(next >= h.target.times){ if(i < 0) log.push(id); }   // 到量 → 达标
+    else if(i >= 0) log.splice(i, 1);
+    if(!log.length) delete S.logs[k];                       // 别在存档里留空数组
+  });
+  ui.keepScroll = true;
+  render();
+  flipPlay(prev);
+}
+
+function chkTap(type, id){
+  const h = type === 'habit' ? store.read().habits.find(x => x.id === id) : null;
+  if(!h || !h.target) return toggleCheck(type, id);
+  const k = tkey();
+  const cur = (store.read().counts[k] || {})[id] || 0;
+  if(cur >= h.target.times){ toast('今天到量了'); return; }   // 到量锁定，再点没反应
+  bumpCount(id, 1);
+}
+
+const CHK_HOLD = 460;
+let chkTimer = null, chkFrom = null, chkGuardUntil = 0;
+
+function openChkMenu(id, el){
+  const r = el.getBoundingClientRect();
+  const W = 138;
+  ui.chkMenu = {
+    id,
+    x: Math.max(10, Math.min(r.right - W, window.innerWidth - W - 10)),
+    y: Math.min(r.bottom + 8, window.innerHeight - 110)
+  };
+  ui.keepScroll = true;
+  render();
+}
+function closeChkMenu(){
+  if(!ui.chkMenu) return;
+  ui.chkMenu = null;
+  ui.keepScroll = true;
+  render();
+}
+
+/* target 改了（8 杯改成 5 杯）→ 每一天的「达标」要跟着重算。
+   counts 一个都不删，所以改回 8 杯还能原样复原。 */
+function syncTargetLogs(S, id){
+  const h = S.habits.find(x => x.id === id);
+  if(!h || !h.target) return;
+  Object.keys(S.counts).forEach(k => {
+    const n = (S.counts[k] || {})[id] || 0;
+    const log = S.logs[k] || (S.logs[k] = []);
+    const i = log.indexOf(id);
+    if(n >= h.target.times){ if(i < 0) log.push(id); }
+    else if(i >= 0) log.splice(i, 1);
+    if(!log.length) delete S.logs[k];
+  });
+}
+
+/* 拖动 = 改这个事项的安排；只写「今天对应的那个星期槽」 */
+function assignTo(type, id, anchorId){
+  const w = wd(), k = tkey();
+  store.mutate(S => {
+    if(type === 'habit'){
+      const h = S.habits.find(x => x.id === id);
+      if(!h) return;
+      h.placement[w] = anchorId;      // null = 要做但没安排 → 进未分配
+    }else{
+      const it = (S.extras[k] || []).find(x => x.id === id);
+      if(it) it.anchorId = anchorId;
+    }
+  });
+}
+
+function saveNote(k, v){
+  store.mutate(S => {
+    if(v.trim()) S.notes[k] = v; else delete S.notes[k];
+  });
+}
+
+function saveAdd(){
+  const f = ui.form;
+  const title = f.title.trim();
+  if(!title){ toast('先写点什么吧'); return; }
+  const k = tkey();
+
+  /* 时间先认一遍：直接从「时 / 分」四个框读，认不出来就别存 */
+  let st = '', en = '';
+  if(f.isAnchor){
+    st = readTimeGroup('start'); en = readTimeGroup('end');
+    if(st === null || en === null){ toast('小时 0–23，分钟 0–59'); return; }
+  }
+
+  store.mutate(S => {
+    if(f.isAnchor){
+      const days = f.aDays.length ? f.aDays.slice() : ALL.slice();
+      const rule = { days, start: st || null, end: en || null };
+      if(f.editId){
+        const a = S.anchors.find(x => x.id === f.editId);
+        if(a){ a.title = title; a.rules = [rule]; }
+      }else{
+        const maxOrder = S.anchors.reduce((m,a) => Math.max(m, a.order||0), 0);
+        S.anchors.push({ id:uid('a_'), title, order:maxOrder+1, deleted:false, rules:[rule] });
+      }
+      return;
+    }
+
+    const icon = f.icon || 'default';
+
+    if(f.resident){
+      /* 常驻：按周循环。哪天做 = placement 的 key 存在；挂在哪个锚点 = 值。
+         按次数记的不挂锚点（它整天都在进行，落在哪个锚点后面都说不通）。 */
+      const placement = {};
+      const at = f.target ? null : (f.anchorId || null);
+      f.days.forEach(d => { placement[d] = at; });
+
+      if(f.type === 'habit' && f.editId){
+        const h = S.habits.find(x => x.id === f.editId);
+        if(h){ h.title = title; h.mini = f.mini.trim(); h.icon = icon;
+               h.placement = placement; h.target = (f.resident ? f.target : null) || null;
+               syncTargetLogs(S, h.id); }
+      }else{
+        if(f.type === 'extra' && f.editId){
+          /* 一次性 → 常驻：把它从今天的一次性里摘出来，转成长期 */
+          const list = S.extras[k] || [];
+          const i = list.findIndex(x => x.id === f.editId);
+          if(i >= 0) list.splice(i,1);
+          if(!list.length) delete S.extras[k];
+        }
+        const maxOrder = S.habits.reduce((m,h) => Math.max(m, h.order||0), 0);
+        S.habits.push({ id:uid('h_'), title, mini:f.mini.trim(), icon,
+                        order:maxOrder+1, archived:false, placement,
+                        target: f.target || null });
+      }
+      return;
+    }
+
+    /* 一次性：只属于创建那天，第二天自动不在 */
+    const list = S.extras[k] || (S.extras[k] = []);
+    if(f.type === 'extra' && f.editId){
+      const it = list.find(x => x.id === f.editId);
+      if(it){ it.title = title; it.mini = f.mini.trim(); it.anchorId = f.anchorId || null; it.icon = icon; }
+    }else{
+      if(f.type === 'habit' && f.editId){
+        /* 常驻 → 只有今天：从长期里摘掉（保留历史可读），落成今天的一次性 */
+        const h = S.habits.find(x => x.id === f.editId);
+        if(h) h.archived = true;
+      }
+      list.push({ id:uid('e_'), title, mini:f.mini.trim(), anchorId:f.anchorId || null, icon, done:false });
+    }
+  });
+
+  /* 从哪来就回哪：汉堡页新增/编辑/删除后留在汉堡页，别把她甩到「今天」去 */
+  ui.screen = ui.from || 'today';
+  render();
+}
+
+/* 汉堡页左滑直接删：和编辑页里的删除是同一套（事项 / 锚点都软删，历史还读得到） */
+function quickDelete(kind, id){
+  if(!id) return;
+  store.mutate(S => {
+    if(kind === 'habit'){
+      const h = S.habits.find(x => x.id === id);
+      if(h) h.archived = true;
+    }else if(kind === 'anchor'){
+      const a = S.anchors.find(x => x.id === id);
+      if(a) a.deleted = true;
+    }
+  });
+  /* 删掉锚点后，挂在它下面的事项自动浮回「未分配」，不用额外处理 */
+  swOpen = null;
+  render();
+  toast(kind === 'anchor' ? '锚点删掉了' : '删掉了');
+}
+
+function deleteItem(){
+  const f = ui.form;
+  if(!f.editId) return;
+  const k = tkey();
+  store.mutate(S => {
+    if(f.type === 'habit'){
+      const h = S.habits.find(x => x.id === f.editId);
+      if(h) h.archived = true;                              // 软删，历史还读得到
+    }else if(f.type === 'extra'){
+      const list = S.extras[k] || [];
+      const i = list.findIndex(x => x.id === f.editId);
+      if(i >= 0) list.splice(i,1);
+      if(!list.length) delete S.extras[k];
+    }else if(f.type === 'anchor'){
+      const a = S.anchors.find(x => x.id === f.editId);
+      if(a) a.deleted = true;                               // 软删
+    }
+  });
+  /* 删掉锚点后，挂在它下面的事项不需要任何处理 —— 它们自动浮回「未分配」 */
+  /* 从哪来就回哪：汉堡页新增/编辑/删除后留在汉堡页，别把她甩到「今天」去 */
+  ui.screen = ui.from || 'today';
+  render();
+}
+
+/* ============================================================================
+ * 拖动
+ * ========================================================================*/
+function nearestSlot(x, y){
+  let best = null, bd = 1e9;
+  document.querySelectorAll('[data-slot]').forEach(el => {
+    const r = el.getBoundingClientRect();
+    const cx = Math.max(r.left, Math.min(x, r.right));
+    const cy = Math.max(r.top,  Math.min(y, r.bottom));
+    const d = Math.hypot(x-cx, y-cy);
+    if(d < bd){ bd = d; best = el; }
+  });
+  return best;   // 拖动时所有槽都在，最近的直接采纳
+}
+
+function slotAt(x, y){
+  const el = document.elementFromPoint(x, y);
+  const s = el && el.closest ? el.closest('[data-slot]') : null;
+  if(s) return s;
+  const s2 = el && el.closest ? el.closest('.unassigned') : null;
+  if(s2){ const t = s2.querySelector('[data-slot]'); if(t) return t; }
+  return nearestSlot(x, y);
+}
+
+/* 拖动要先"按住一下"才拿得起来：滑动页面和拖动不能再抢同一个手势。
+   没拿起来之前，手指在卡片上滑动照常滚页面（.task 的 touch-action 是 pan-y）；
+   这段缓冲里只要挪了 DRAG_SLOP，就判定"她是在滚页面"，这次拖动直接放掉。 */
+const DRAG_HOLD = 280;   /* ms：按住这么久，卡片才算被"拿起来" */
+const DRAG_SLOP = 8;     /* px：还没拿起来之前挪超过这么多 = 她要滚页面 */
+
+function armDrag(d){
+  if(!d || ui.drag !== d || d.armed) return;
+  d.armed = true;
+  if(d.card && d.card.classList) d.card.classList.add('arming');
+}
+function dropDrag(){
+  const d = ui.drag;
+  if(!d) return;
+  ui.drag = null;
+  clearTimeout(d.timer);
+  if(d.card && d.card.classList) d.card.classList.remove('arming');
+}
+
+/* ---------- 返回：一个动作，两个入口 ----------
+   左上角箭头（热区已放大）+ 新增/编辑页的「从左边缘往右滑」。 */
+function goBack(){
+  /* 从哪进来就回哪去：汉堡页点锚点/事项、设置页点锚点，都各自回自己那屏 */
+  if(ui.screen === 'add' && ui.from) ui.screen = ui.from;
+  else ui.screen = ui.tab || 'today';
+  render();
+}
+
+/* iOS 习惯：手指从屏幕左边往右划 = 返回。
+   只在「新增 / 编辑」这一屏生效；横向位移要明显大于纵向，否则当上下滚动处理。 */
+const SWIPE_EDGE = 44;        // 从左边 44px 以内起手才算
+const SWIPE_DIST = 64;        // 往右划过 64px 触发
+let edgeSwipe = null;
+
+document.addEventListener('pointerdown', e => {
+  edgeSwipe = null;
+  if(ui.screen !== 'add') return;
+  if(e.pointerType === 'mouse') return;                        // 桌面点箭头就行
+  if(e.clientX > SWIPE_EDGE) return;
+  /* 从输入框 / 日期圆点 / 图标行上起手不算，免得跟打字和横滑打架 */
+  if(e.target.closest('input,textarea,.dots,.picker,.chips,.switch,.time-row,.preview')) return;
+  edgeSwipe = { x0: e.clientX, y0: e.clientY };
+});
+
+document.addEventListener('pointermove', e => {
+  const s = edgeSwipe;
+  if(!s) return;
+  const dx = e.clientX - s.x0, dy = e.clientY - s.y0;
+  if(dx < SWIPE_DIST) return;
+  if(Math.abs(dy) > dx * 0.7){ edgeSwipe = null; return; }      // 更像上下滑 → 不认
+  edgeSwipe = null;
+  goBack();
+});
+
+document.addEventListener('pointerup', () => { edgeSwipe = null; });
+document.addEventListener('pointercancel', () => { edgeSwipe = null; });
+
+/* ---------- 汉堡页：往左滑露出「删除」 ----------
+   跟她要的一样，像苹果备忘录：滑出来 → 点删除 → 直接没了，不用点进去。
+   同一时间只允许一行开着；上下滑、点别处都会收回去。 */
+const SW_DEL_W    = 82;   // 删除按钮宽度，和 CSS 里 .swipe-del 的 width 保持一致
+const SW_OPEN_AT  = 32;   // 往左拖过这么远就停在「打开」态（不到就弹回去）
+const SW_GUARD    = 320;  // 拖完这一小段时间内不认点击，否则手指一松就跟着跳进编辑页
+let swDrag = null, swOpen = null, swGuardUntil = 0;
+
+const swRow = w => w ? w.querySelector('.bgr-row') : null;
+
+function swClose(wrap){
+  if(!wrap) return;
+  wrap.classList.remove('open');
+  const r = swRow(wrap);
+  if(r) r.style.transform = '';
+  if(swOpen === wrap) swOpen = null;
+}
+function swCloseAll(){ document.querySelectorAll('.swipe.open').forEach(swClose); swOpen = null; }
+
+document.addEventListener('pointerdown', e => {
+  if(ui.screen !== 'burger') return;
+  if(e.button !== undefined && e.button !== 0) return;
+  const wrap = e.target.closest('.swipe');
+  if(!wrap){ swCloseAll(); return; }                          // 点在面板外 → 收起
+  if(e.target.closest('.swipe-del')) return;                  // 删除按钮自己走 click
+  if(swOpen && swOpen !== wrap) swClose(swOpen);              // 摸另一行 → 先收起原来那行
+  swDrag = { wrap, id:e.pointerId, x0:e.clientX, y0:e.clientY,
+             base: wrap.classList.contains('open') ? -SW_DEL_W : 0, on:false };
+});
+
+document.addEventListener('pointermove', e => {
+  const d = swDrag;
+  if(!d || e.pointerId !== d.id) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+
+  if(!d.on){
+    if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;        // 还在抖，方向没定
+    if(Math.abs(dy) >= Math.abs(dx)){ swDrag = null; return; } // 上下居多 → 她要滚页面，放手
+    d.on = true;
+    const r = swRow(d.wrap);
+    if(r) r.style.transition = 'none';                        // 拖的时候要跟手，不能有缓动
+    document.querySelectorAll('.swipe.open').forEach(el => { if(el !== d.wrap) swClose(el); });
+  }
+
+  let x = d.base + dx;
+  if(x > 0) x *= .2;                                          // 往右拉给阻尼，别硬顶
+  if(x < -SW_DEL_W) x = -SW_DEL_W - ((-x - SW_DEL_W) * .25);   // 越过删除按钮也减速
+  const r = swRow(d.wrap);
+  if(r) r.style.transform = `translateX(${x}px)`;
+});
+
+function swFinish(commit, e){
+  const d = swDrag; swDrag = null;
+  if(!d || !d.on) return;
+  const r = swRow(d.wrap);
+  if(r){ r.style.transition = ''; r.style.transform = ''; }
+  /* 松手时按位置决定停在打开还是弹回去 */
+  const pos = commit && e ? d.base + (e.clientX - d.x0) : d.base;
+  const open = pos <= -SW_OPEN_AT;
+  d.wrap.classList.toggle('open', open);
+  swOpen = open ? d.wrap : null;
+  swGuardUntil = Date.now() + SW_GUARD;
+}
+document.addEventListener('pointerup', e => swFinish(true, e));
+/* 浏览器把这块手势判成滚动了 → 恢复成拖动前的样子 */
+document.addEventListener('pointercancel', () => swFinish(false));
+
+
+/* ---------- 计数圈：长按 = 减一 / 今天就这样 ----------
+   点一下是 +1（走 click），长按弹菜单。两件事必须分开：
+   长按抬手后浏览器还会补一个 click，所以弹完菜单要挡一小段时间，否则一弹出就被关掉。 */
+document.addEventListener('pointerdown', e => {
+  if(ui.screen !== 'today') return;
+  const el = e.target.closest('.chk, .hit');
+  if(!el) return;
+  const card = el.closest('.task');
+  if(!card) return;
+  const h = store.read().habits.find(x => x.id === card.dataset.id);
+  if(!h || !h.target) return;                 // 普通事项没有菜单
+
+  clearTimeout(chkTimer);
+  chkFrom = { x: e.clientX, y: e.clientY, el };
+  chkTimer = setTimeout(() => {
+    chkTimer = null;
+    chkGuardUntil = Date.now() + 420;
+    openChkMenu(card.dataset.id, chkFrom.el);
+  }, CHK_HOLD);
+});
+document.addEventListener('pointermove', e => {
+  if(!chkTimer || !chkFrom) return;
+  if(Math.hypot(e.clientX - chkFrom.x, e.clientY - chkFrom.y) > 9) dropChkHold();
+});
+function dropChkHold(){ clearTimeout(chkTimer); chkTimer = null; chkFrom = null; }
+document.addEventListener('pointerup', dropChkHold);
+document.addEventListener('pointercancel', dropChkHold);
+
+document.addEventListener('pointerdown', e => {
+  if(e.button !== undefined && e.button !== 0) return;
+  const card = e.target.closest('.task');
+  if(!card || e.target.closest('.chk, .hit')) return;  if(ui.screen !== 'today') return;
+  /* 按住卡片就当"可能要在拖"：先掐掉浏览器默认行为，顺手清掉已有选区。
+     不掐的话鼠标是选中文字、iOS 长按是弹拷贝菜单，两者都会打断拖动。
+     这里只拦卡片（.chk 上面已经 return 了），输入框根本不经过这段。 */
+  e.preventDefault();
+  const sel = window.getSelection();
+  if(sel && sel.removeAllRanges) sel.removeAllRanges();
+  const r = card.getBoundingClientRect();
+  /* 习惯栏的卡片没有"挂载点"可拖 —— 按住也不拿起来，抬手就是打开编辑 */
+  const fixed = !!card.closest('.habitsec');
+  ui.drag = {
+    card, id: card.dataset.id, type: card.dataset.type,
+    x0: e.clientX, y0: e.clientY,
+    ox: e.clientX - r.left, oy: e.clientY - r.top,
+    w: r.width, h: r.height,
+    active: false, armed: false, target: null, moved: false,
+    pointerId: e.pointerId, timer: null
+  };
+  if(fixed) return;
+  /* 鼠标没有"滑动误触"这回事，按住就拖；触摸/笔要按住一下才拿起来。 */
+  if(e.pointerType === 'mouse'){ armDrag(ui.drag); }
+  else{ ui.drag.timer = setTimeout(() => armDrag(ui.drag), DRAG_HOLD); }
+});
+
+/* 卡片拿起来之后页面就不许再滚了 —— touch-action 是 pan-y，得手动挡。
+   必须在第一个 touchmove 上就挡：浏览器一旦开始滚，这个手势就收不回来了。 */
+document.addEventListener('touchmove', e => {
+  if(ui.drag && ui.drag.armed) e.preventDefault();
+}, {passive:false});
+
+document.addEventListener('pointermove', e => {
+  const d = ui.drag;
+  if(!d) return;
+  const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+  const dist = Math.hypot(dx, dy);
+  if(!d.active){
+    if(!d.armed){
+      if(dist > DRAG_SLOP) dropDrag();   /* 没拿起来就挪 = 她要滚页面，让给她 */
+      return;
+    }
+    if(dist < 8) return;
+    d.active = true; d.moved = true;
+    clearTimeout(d.timer); d.timer = null;
+    d.card.classList.remove('arming');
+    const r = d.card.getBoundingClientRect();
+    d.ox = d.x0 - r.left; d.oy = d.y0 - r.top;
+    d.card.style.width = d.w + 'px';
+    d.card.style.height = d.h + 'px';
+    d.card.classList.add('dragging');
+    $('app').classList.add('locked');
+    /* 重渲染一次：卡片原位收起、所有落点槽浮出、副标题变成"原来挂在…" */
+    render();
+    const again = document.querySelector(`.task[data-id="${cssEsc(d.id)}"]`);
+    if(again){
+      d.card = again;
+      again.classList.add('dragging');
+      again.style.width = d.w + 'px';
+      again.style.height = d.h + 'px';
+    }
+  }
+  const el = d.card;
+  el.style.left = (e.clientX - d.ox) + 'px';
+  el.style.top  = (e.clientY - d.oy) + 'px';
+
+  const slot = slotAt(e.clientX, e.clientY);
+  if(slot !== d.target){
+    document.querySelectorAll('[data-slot]').forEach(s => s.classList.remove('near'));
+    if(slot) slot.classList.add('near');
+    d.target = slot;
+  }
+  e.preventDefault();
+}, {passive:false});
+
+function cssEsc(s){ return String(s).replace(/["\\]/g, '\\$&'); }
+
+document.addEventListener('pointerup', e => {
+  const d = ui.drag;
+  if(!d) return;
+  clearTimeout(d.timer);
+  ui.drag = null;
+  if(d.card && d.card.classList) d.card.classList.remove('arming');
+  if(!d.active){
+    /* 手指没挪 = 点了一下卡片 → 打开编辑。
+       按住久一点再抬手也算点开（否则她慢一点按就变成"点了没反应"）。
+       真正拖动过的走下面那条，不会被这里截胡。 */
+    openEdit(d.type, d.id);
+    return;
+  }
+  const slot = d.target;
+  $('app').classList.remove('locked');
+  if(slot){
+    const raw = slot.dataset.slot;
+    assignTo(d.type, d.id, raw === 'none' ? null : raw);
+  }
+  render();   // 松手立即生效，不弹确认、不弹撤销
+});
+
+document.addEventListener('pointercancel', () => {
+  const d = ui.drag;
+  ui.drag = null;
+  if(!d) return;
+  clearTimeout(d.timer);
+  if(d.card && d.card.classList) d.card.classList.remove('arming');
+  if(d.active){
+    $('app').classList.remove('locked');
+    render();
+  }
+});
+
+/* ============================================================================
+ * 点击分派
+ * ========================================================================*/
+function openEdit(type, id, from){
+  const S = store.read();
+  const f = blankForm();
+  if(type === 'habit'){
+    const h = S.habits.find(x => x.id === id);
+    if(!h) return;
+    f.isAnchor = false; f.type = 'habit'; f.editId = h.id;
+    f.title = h.title; f.mini = h.mini || ''; f.icon = h.icon || 'default';
+    f.target = h.target || null;
+    f.resident = true;
+    f.days = Object.keys(h.placement).map(Number).sort((a,b)=>a-b);
+    f.anchorId = h.placement[wd()] || '';
+  }else if(type === 'extra'){
+    const e0 = (S.extras[tkey()] || []).find(x => x.id === id);
+    if(!e0) return;
+    f.isAnchor = false; f.type = 'extra'; f.editId = e0.id;
+    f.title = e0.title; f.mini = e0.mini || ''; f.icon = e0.icon || 'default';
+    f.resident = false;
+    f.anchorId = e0.anchorId || '';
+  }
+  ui.form = f;
+  ui.from = from || 'today';
+  ui.screen = 'add';
+  render();
+}
+
+document.addEventListener('click', e => {
+  /* 长按刚弹过菜单：这一下抬手补发的 click 不能当真（否则菜单一出现就被关上） */
+  if(Date.now() < chkGuardUntil) return;
+  /* 菜单开着时点别处就关。热区已经铺满整卡右侧，再排除 .chk / .hit
+     就等于"点哪儿都不关"，菜单会一直挂着 —— 长按补发的那个 click 由上面的
+     chkGuardUntil 挡，不靠这条来防。 */
+  if(ui.chkMenu && !e.target.closest('.chkmenu')) closeChkMenu();
+
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  const act = el.dataset.act;
+  const S = store.read();
+
+  if(act === 'open-howto'){ ui.howtoI = 0; ui.howtoFrom = ui.screen; ui.screen = 'howto'; render(); return; }
+  if(act === 'howto-next'){
+    if((ui.howtoI || 0) >= HOWTO_PAGES.length - 1) howtoClose();
+    else howtoGo((ui.howtoI || 0) + 1);
+    return;
+  }
+  if(act === 'howto-close'){ howtoClose(); return; }
+
+  if(act === 'tab'){ ui.screen = el.dataset.tab; render(); return; }
+  if(act === 'open-settings'){ ui.from = 'today'; ui.screen = 'settings'; render(); return; }
+  if(act === 'back'){ goBack(); return; }
+  if(act === 'open-note'){ ui.noteD = el.dataset.date || tkey(); ui.screen = 'note'; render(); return; }
+  if(act === 'open-add'){
+    ui.form = blankForm();
+    ui.from = ui.screen === 'burger' ? 'burger' : 'today';
+    ui.screen = 'add'; render(); return;
+  }
+  if(act === 'open-year'){ ui.screen = 'year'; render(); return; }
+  if(act === 'open-add-anchor'){
+    ui.form = blankForm(); ui.form.isAnchor = true;
+    ui.from = ui.screen === 'burger' ? 'burger' : 'settings';
+    ui.screen = 'add'; render(); return;
+  }
+  /* 汉堡页左滑露出的删除按钮：点了就删，不弹确认（她要的「不用点进去」） */
+  if(act === 'quick-del'){
+    swCloseAll();
+    quickDelete(el.dataset.kind, el.dataset.id);
+    return;
+  }
+  /* 刚滑完的那一下不要当成点击，否则一松手就跟着跳进编辑页 */
+  if(act === 'edit-habit' || act === 'edit-anchor'){
+    if(Date.now() < swGuardUntil) return;
+    const wrap = el.closest('.swipe');
+    if(wrap && wrap.classList.contains('open')){ swClose(wrap); return; }  // 开着时点这行 = 收起来
+  }
+  if(act === 'edit-habit'){ openEdit('habit', el.dataset.id, 'burger'); return; }
+  if(act === 'edit-anchor'){
+    const a = S.anchors.find(x => x.id === el.dataset.id);
+    if(!a) return;
+    const f = blankForm();
+    f.isAnchor = true; f.type = 'anchor'; f.editId = a.id; f.title = a.title;
+    f.aDays = (a.rules[0] ? a.rules[0].days.slice() : ALL.slice());
+    f.start = (a.rules[0] && a.rules[0].start) || '';
+    f.end   = (a.rules[0] && a.rules[0].end)   || '';
+    ui.form = f;
+    ui.from = ui.screen === 'burger' ? 'burger' : 'settings';
+    ui.screen = 'add'; render(); return;
+  }
+  if(act === 'check'){ chkTap(el.dataset.type, el.dataset.id); return; }
+  if(act === 'chk-minus'){
+    const id = (ui.chkMenu || {}).id;
+    closeChkMenu();
+    if(id) bumpCount(id, -1);
+    return;
+  }
+  if(act === 'chk-ok'){ closeChkMenu(); return; }
+  if(act === 'pick-day'){ ui.reviewD = el.dataset.date; render(); return; }
+  if(act === 'mprev'){
+    ui.calM.m--; if(ui.calM.m < 0){ ui.calM.m = 11; ui.calM.y--; } render(); return;
+  }
+  if(act === 'mnext'){
+    ui.calM.m++; if(ui.calM.m > 11){ ui.calM.m = 0; ui.calM.y++; } render(); return;
+  }
+  if(act === 'save-add'){ saveAdd(); return; }
+  if(act === 'delete-item'){ deleteItem(); return; }
+  if(act === 'reset-all'){
+    store.reset();
+    ui.form = blankForm();
+    ui.screen = 'settings';
+    render();
+    toast('清空了');
+    return;
+  }
+  if(act === 'export-backup'){ exportBackup(); return; }
+  if(act === 'import-backup'){ const f = $('importFile'); if(f) f.click(); return; }
+  if(act === 'close-ios-tip'){
+    const t = $('iosTip');
+    if(t) t.remove();
+    /* 只用 sessionStorage —— 页面数据一律走 store，这里不碰 localStorage */
+    try{ sessionStorage.setItem('hb_tip_seen', '1'); }catch(e){}
+    return;
+  }
+
+  if(act === 'toggle-anchor'){
+    ui.form.isAnchor = !ui.form.isAnchor;
+    if(ui.form.isAnchor) ui.form.resident = false;
+    render();
+    const t = $('fTitle'); if(t){ t.focus(); }
+    return;
+  }
+  if(act === 'toggle-resident'){
+    ui.form.resident = !ui.form.resident;
+    if(ui.form.resident && !ui.form.days.length) ui.form.days = ALL.slice();
+    render();
+    const t = $('fTitle'); if(t){ t.focus(); }
+    return;
+  }
+  if(act === 'day'){
+    const k = el.dataset.kind === 'a' ? 'aDays' : 'days';
+    const d = Number(el.dataset.day);
+    const arr = ui.form[k];
+    const i = arr.indexOf(d);
+    if(i < 0) arr.push(d); else arr.splice(i,1);
+    arr.sort((x,y)=>x-y);
+    render(); return;
+  }
+  if(act === 'pick-icon'){
+    ui.form.icon = el.dataset.id;
+    /* 只改选中态、不重渲染 —— 重渲染会把正在输入的框清掉 */
+    const row = el.closest('.picker');
+    row.querySelectorAll('.pick').forEach(p => p.classList.toggle('on', p === el));
+    scrollPickIntoView(row, el, true);
+    return;
+  }
+  if(act === 'pick-anchor'){ ui.form.anchorId = el.dataset.id; render(); return; }
+});
+
+document.addEventListener('input', e => {
+  const el = e.target, id = el.id, v = el.value;
+
+  /* 时间：小时框 / 分钟框，只收数字，合成 "H:mm" 写回表单 */
+  if(el.dataset && el.dataset.t){
+    const digits = v.replace(/\D/g, '').slice(0, 2);
+    if(digits !== v) el.value = digits;
+    ui.form[el.dataset.t] = readTimeGroup(el.dataset.t);
+    updatePreview();
+    /* 小时打满两位就跳到分钟框 —— 少按一次，也让"这格是小时"更确定 */
+    if(el.dataset.p === 'h' && el.value.length === 2){
+      const mEl = $(el.dataset.t === 'start' ? 'fStartM' : 'fEndM');
+      if(mEl) mEl.focus();
+    }
+    return;
+  }
+
+  if(id === 'fTitle') ui.form.title = v;
+  else if(id === 'fMini') ui.form.mini = v;
+  else if(id === 'fTarget'){
+    const hint = $('fTargetHint');
+    if(hint) hint.style.display = 'none';       // 又开始打字了，先把提示收起来
+  }
+  else if(id === 'noteInput'){
+    const k = ui.noteD || tkey();
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => saveNote(k, v), 900);
+  }
+  if(id === 'fTitle' || id === 'fMini') updatePreview();
+});
+
+/* 把「时 / 分」两个框读成一个时间字符串。两个都空 = 没填（''）；
+   填了但超范围 = null，交回调用方提示，绝不把坏值写进数据。 */
+function readTimeGroup(which){
+  const pre = which === 'start' ? 'fStart' : 'fEnd';
+  const hEl = $(pre + 'H'), mEl = $(pre + 'M');
+  if(!hEl || !mEl) return '';
+  const hv = hEl.value.trim(), mv = mEl.value.trim();
+  if(!hv && !mv) return '';
+  const t = normTime((hv || '0') + ':' + (mv || '0'));
+  if(t === null) return null;                       // 超范围，让调用方去描红
+  return which === 'end' ? noEnd(t) : t;            // 结束是 0:00 = 没填
+}
+
+/* 收键盘时补齐两位（8 → 08），超范围描红 */
+function tidyGroup(which){
+  const pre = which === 'start' ? 'fStart' : 'fEnd';
+  const hEl = $(pre + 'H'), mEl = $(pre + 'M');
+  if(!hEl || !mEl) return;
+  const hv = hEl.value.trim(), mv = mEl.value.trim();
+  if(!hv && !mv){
+    hEl.classList.remove('bad'); mEl.classList.remove('bad');
+    ui.form[which] = ''; updatePreview(); return;
+  }
+  const H = hv === '' ? 0 : +hv, M = mv === '' ? 0 : +mv;
+  const ok = H >= 0 && H <= 23 && M >= 0 && M <= 59;
+  hEl.classList.toggle('bad', !ok);
+  mEl.classList.toggle('bad', !ok);
+  if(!ok){ toast('小时 0–23，分钟 0–59'); return; }
+  const t = H + ':' + String(M).padStart(2, '0');
+  /* 结束时间填成 0 点：她要的是"删掉这组"，所以两个框一起清空。
+     不然框里留着 00:00、实际却按"没填"存，显示和数据就对不上了。 */
+  if(which === 'end' && !noEnd(t)){
+    hEl.value = ''; mEl.value = '';
+    ui.form[which] = ''; updatePreview(); return;
+  }
+  hEl.value = String(H).padStart(2, '0');
+  mEl.value = String(M).padStart(2, '0');
+  ui.form[which] = t;
+  updatePreview();
+}
+
+let noteTimer = null;
+document.addEventListener('focusout', e => {
+  const id = e.target.id;
+  if(e.target.dataset && e.target.dataset.t){
+    tidyGroup(e.target.dataset.t);
+    return;
+  }
+  if(id === 'noteInput'){
+    clearTimeout(noteTimer);
+    saveNote(ui.noteD || tkey(), e.target.value);
+  }
+  /* 「一天要做几次」只在失焦时认一次，然后把框重写成规范形式「8 杯」。
+     认不出来不猜、不清空 —— 保留她写的原文，把那行说明临时换成"没认出来"。 */
+  if(id === 'fTarget'){
+    const raw = e.target.value;
+    const t = parseTarget(raw);
+    const hint = $('fTargetHint');
+    const HINT_OK = '留空 = 只做一次。填了会进「习惯」栏，点一下加一次。';
+    ui.form.target = t;
+    if(t){
+      e.target.value = targetInput(t);
+      if(hint){ hint.classList.remove('bad'); hint.textContent = HINT_OK; }
+      if(!ui.form.resident){
+        /* 一次性事项是布尔，计数没有意义 —— 填了次数就自动常驻，别让她填了个寂寞 */
+        ui.form.resident = true;
+        render();
+        toast('按次数记的，会常驻');
+        return;
+      }
+    }else if(hint){
+      const bad = !!raw.trim();
+      hint.classList.toggle('bad', bad);
+      hint.textContent = bad ? '没认出来。写成「8 杯」「3 次」这样就行。' : HINT_OK;
+    }
+    updatePreview();
+  }
+});
+
+/* 选了备份文件 */
+document.addEventListener('change', e => {
+  if(e.target.id !== 'importFile') return;
+  const f = e.target.files && e.target.files[0];
+  if(f) importBackup(f);
+  e.target.value = '';          // 同一个文件还能再选一次
+});
+
+/* 预览跟着填的东西变（局部更新，不重渲染 → 输入不会丢焦点） */
+function updatePreview(){
+  const p = document.querySelector('.preview');
+  if(p) p.textContent = previewText();
+}
+
+/* ============================================================================
+ * 启动
+ * ========================================================================*/
+/* 第一次打开先把说明书摆出来 —— 关掉才进今天页 */
+if(!store.read().seenHowto) ui.screen = 'howto';
+render();
+
+/* 跨天自动翻页（放着不动到第二天，今天页要跟着走） */
+setInterval(() => {
+  const now = new Date();
+  if(dkey(now) !== dkey(ui.today) && ui.screen !== 'add' && ui.screen !== 'note'){
+    ui.today = now;
+    ui.reviewD = dkey(now);
+    render();
+  }
+}, 60000);
+
+/* ============================================================================
+ * iOS：第一次多半是在 Safari（或者更糟，在微信里）打开的
+ *   加到主屏幕之后 display-mode 就变成 standalone，这条提示自己消失。
+ * ========================================================================*/
+function iosHint(){
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const standalone = navigator.standalone === true ||
+                     window.matchMedia('(display-mode: standalone)').matches;
+  if(!isIOS || standalone) return;
+  try{ if(sessionStorage.getItem('hb_tip_seen') === '1') return; }catch(e){}
+
+  /* 微信内置浏览器没有「添加到主屏幕」这个菜单，得先请她去浏览器 */
+  const inWX = /MicroMessenger/i.test(ua);
+  const txt = inWX
+    ? `点右上角的 <b>⋯</b> 选<b>在浏览器打开</b>，<br>再从浏览器的分享菜单<b>添加到主屏幕</b>。`
+    : `点屏幕底部的<b>分享</b>按钮，<br>往下找<b>「添加到主屏幕」</b>，桌面就有图标了。`;
+
+  const el = document.createElement('div');
+  el.className = 'ios-tip';
+  el.id = 'iosTip';
+  el.innerHTML =
+    `<div class="ios-tip-txt">${txt}</div>
+     <span class="ios-tip-x" data-act="close-ios-tip" aria-label="知道了">
+       <svg width="11" height="11" viewBox="0 0 11 11"><path d="M1.6 1.6l7.8 7.8M9.4 1.6l-7.8 7.8" stroke="#C8B5A1" stroke-width="1.7" stroke-linecap="round"/></svg>
+     </span>`;
+  document.body.appendChild(el);
+}
+
+/* 请求持久化存储：iOS 在空间紧张时会驱逐"尽力而为"的数据，
+   装到主屏幕的 App 更容易拿到豁免。被拒也不影响使用。 */
+if(navigator.storage && navigator.storage.persist){
+  navigator.storage.persist().catch(() => {});
+}
+
+
+/* 让某个图标在横滑行里露出来。用 getBoundingClientRect 而不是 offsetLeft ——
+   .form 是 position:relative，offsetLeft 是相对它算的，不是相对这条滚动条。 */
+function scrollPickIntoView(row, el, smooth){
+  const rr = row.getBoundingClientRect(), er = el.getBoundingClientRect();
+  if(er.left >= rr.left && er.right <= rr.right) return;
+  const left = Math.max(0, row.scrollLeft + (er.left - rr.left)
+                           - (row.clientWidth - er.width) / 2);
+  if(smooth) row.scrollTo({left, behavior:'smooth'});
+  else row.scrollLeft = left;
+}
+
+/* 图标行：滑到底就把右边渐隐收掉；进来时把当前选中的那个滚到看得见的地方
+   （编辑一条用了靠后图标的旧事项时，不然看不出它选的是哪个）。 */
+function initPicker(){
+  const p = document.querySelector('.picker');
+  if(!p) return;
+  const mark = () => p.classList.toggle(
+    'at-end', p.scrollLeft + p.clientWidth >= p.scrollWidth - 2);
+  p.addEventListener('scroll', mark, {passive:true});
+  const sel = p.querySelector('.pick.on');
+  if(sel) scrollPickIntoView(p, sel, false);
+  mark();
+}
+
+/* PWA：service worker */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+iosHint();
+</script>
+</body>
+</html>
